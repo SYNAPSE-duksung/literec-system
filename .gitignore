@@ -1,3 +1,8 @@
+# 작업 중 업데이트한 내용
+data/raw/*
+!data/raw/.gitkeep
+
+
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
 # Edit at https://www.toptal.com/developers/gitignore?templates=venv,windows,macos,python,react
 
