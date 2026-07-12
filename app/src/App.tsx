@@ -16,9 +16,13 @@ import { ReviewWritePage } from './pages/ReviewWritePage';
 import { ReviewDetailPage } from './pages/ReviewDetailPage';
 import { MyPage } from './pages/MyPage';
 
+const ONBOARDING_STORAGE_KEY = 'literec:onboardingComplete';
+
 export function App() {
   const [authed, setAuthed] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(
+    () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true',
+  );
   const [screen, setScreen] = useState<Screen>({ name: 'login' });
   const [history, setHistory] = useState<Screen[]>([]);
 
@@ -69,7 +73,7 @@ export function App() {
       <LoginPage
         onLogin={() => {
           setAuthed(true);
-          setScreen({ name: 'onboarding' });
+          setScreen(onboardingComplete ? { name: 'home' } : { name: 'onboarding' });
         }}
         onGoSignup={() => setScreen({ name: 'signup' })}
       />
@@ -80,6 +84,7 @@ export function App() {
     return (
       <OnboardingPage
         onComplete={() => {
+          localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
           setOnboardingComplete(true);
           setScreen({ name: 'home' });
         }}
