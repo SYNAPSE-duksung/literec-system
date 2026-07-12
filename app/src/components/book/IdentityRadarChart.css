@@ -1,0 +1,11 @@
+.radar-chart {
+  width: 100%;
+  max-width: 220px;
+  display: block;
+  margin: 0 auto;
+}
+
+.radar-chart__label {
+  font-size: 11px;
+  fill: var(--color-text-secondary);
+}

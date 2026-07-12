@@ -110,6 +110,7 @@ interface Book {
   id: string;
   title: string;
   author: string;
+  publisher: string;
   coverUrl: string;
   synopsis: string;
   identityVectors: { trait: string; score: number; keywords: string[] }[];

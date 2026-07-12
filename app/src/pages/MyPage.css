@@ -1,0 +1,28 @@
+.mypage {
+  padding: var(--space-sm);
+}
+
+.mypage__profile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+.mypage__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mypage__preferences {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.mypage__section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: var(--space-md) 0 var(--space-sm);
+}

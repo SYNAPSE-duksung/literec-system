@@ -1,0 +1,18 @@
+.tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tag--default {
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.tag--accent {
+  background: rgba(61, 90, 128, 0.1);
+  color: var(--color-accent);
+}

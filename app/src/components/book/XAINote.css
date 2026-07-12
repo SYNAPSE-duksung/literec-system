@@ -1,0 +1,13 @@
+.xai-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: var(--space-xs) 0 0;
+  font-size: 12px;
+  color: var(--color-accent);
+}
+
+.xai-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}

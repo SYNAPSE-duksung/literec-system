@@ -1,0 +1,36 @@
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.top-header__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.top-header__back {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-primary);
+  display: flex;
+}
+
+.top-header__title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.top-header__right {
+  display: flex;
+  align-items: center;
+}
