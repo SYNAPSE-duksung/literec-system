@@ -10,6 +10,7 @@ data/raw/top-list/*
 # 다음 항목은 최종 결정된 도서 항목이므로 원격 저장소에 업로드
 !data/processed/final_book_list_88.csv
 
+
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
 # Edit at https://www.toptal.com/developers/gitignore?templates=venv,windows,macos,python,react
 
