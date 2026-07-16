@@ -1,3 +1,12 @@
+## 개발 진행 과정에서 추가 ##
+
+# data
+data/processed/*
+data/raw/top-list/*
+!data/processes/.gitkeep
+!data/raw/.gitkeep
+!data/raw/top-list/.gitkeep
+
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
 # Edit at https://www.toptal.com/developers/gitignore?templates=venv,windows,macos,python,react
 
