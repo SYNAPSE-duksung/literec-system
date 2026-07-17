@@ -4,7 +4,7 @@ import { TAB_SCREEN_NAMES } from './types';
 import { useBook } from './hooks/useBook';
 import { useReview } from './hooks/useReview';
 import { Shell } from './components/shell/Shell';
-import { SearchIcon } from './icons';
+import { SearchIcon, HomeIcon } from './icons';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { OnboardingPage } from './pages/OnboardingPage';
@@ -27,7 +27,12 @@ export function App() {
   const [history, setHistory] = useState<Screen[]>([]);
 
   const navigate = (next: Screen) => {
-    setHistory((h) => [...h, screen]);
+    // 탭 화면은 서로 형제 관계라 뒤로가기 부담이 쌓이면 안 되므로 히스토리를 비운다.
+    if (TAB_SCREEN_NAMES.includes(next.name)) {
+      setHistory([]);
+    } else {
+      setHistory((h) => [...h, screen]);
+    }
     setScreen(next);
   };
 
@@ -99,15 +104,26 @@ export function App() {
   let onBack: (() => void) | undefined;
   let rightSlot: ReactNode;
 
+  const homeButton = (
+    <button
+      type="button"
+      className="top-header__icon-btn"
+      onClick={() => navigate({ name: 'home' })}
+      aria-label="홈으로"
+    >
+      <HomeIcon width={20} height={20} />
+    </button>
+  );
+
   switch (screen.name) {
     case 'home':
       title = '결';
       rightSlot = (
         <button
           type="button"
+          className="top-header__icon-btn"
           onClick={() => navigate({ name: 'search' })}
           aria-label="검색"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}
         >
           <SearchIcon width={20} height={20} />
         </button>
@@ -125,14 +141,17 @@ export function App() {
     case 'bookDetail':
       title = headerBookLoading ? '' : (headerBook?.title ?? '책 상세');
       onBack = goBack;
+      rightSlot = homeButton;
       break;
     case 'reviewWrite':
       title = '기록 남기기';
       onBack = goBack;
+      rightSlot = homeButton;
       break;
     case 'reviewDetail':
       title = headerReviewBookLoading ? '' : (headerReviewBook?.title ?? '리뷰 상세');
       onBack = goBack;
+      rightSlot = homeButton;
       break;
   }
 
