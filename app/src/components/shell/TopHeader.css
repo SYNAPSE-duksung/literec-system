@@ -34,3 +34,12 @@
   display: flex;
   align-items: center;
 }
+
+.top-header__icon-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-primary);
+  display: flex;
+}
