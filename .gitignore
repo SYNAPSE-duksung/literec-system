@@ -5,6 +5,7 @@ data/processed/*
 data/raw/top-list/*
 !data/processed/.gitkeep
 !data/raw/.gitkeep
+data/raw/*
 !data/raw/top-list/.gitkeep
 
 # 다음 항목은 최종 결정된 도서 항목이므로 원격 저장소에 업로드
