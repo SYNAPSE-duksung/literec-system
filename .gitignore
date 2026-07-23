@@ -4,6 +4,7 @@
 data/raw/top-list/*
 !data/processed/.gitkeep
 !data/raw/.gitkeep
+data/raw/*
 !data/raw/top-list/.gitkeep
 !data/processed/prompts/*
 

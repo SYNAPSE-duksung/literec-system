@@ -117,6 +117,13 @@ review_likes             -- 좋아요 중복 방지용 조인 테이블
 - user_id (fk)
 - created_at
 - (review_id, user_id) unique
+
+book_reactions           -- 책 자체에 대한 좋아요/싫어요 (리뷰 작성과 별개, mypage "좋아한 책" ❤️ 및 신규 👎 버튼)
+- user_id (fk → users.id)
+- isbn (fk → books.isbn)
+- reaction (enum: 'like' | 'dislike')
+- created_at
+- (user_id, isbn) unique   -- 한 유저당 책 하나에 반응 하나만 (좋아요/싫어요 상호 배타)
 ```
 
 ```mermaid
@@ -125,10 +132,12 @@ erDiagram
     users ||--o| user_profiles : "has"
     users ||--o{ reviews : "writes"
     users ||--o{ review_likes : "likes"
-    
+    users ||--o{ book_reactions : "reacts"
+
     books ||--o| book_aspects : "has"
     books ||--o{ reviews : "has"
-    
+    books ||--o{ book_reactions : "receives"
+
     reviews ||--o{ review_likes : "receives"
 
     users {
@@ -196,6 +205,13 @@ erDiagram
         uuid user_id PK, FK
         timestamp created_at
     }
+
+    book_reactions {
+        uuid user_id PK, FK
+        string isbn PK, FK
+        string reaction
+        timestamp created_at
+    }
 ```
 
 ---
@@ -238,6 +254,16 @@ GET    /api/reviews/{id}              → useReview(reviewId)
 POST   /api/reviews                   { isbn, content, emotion[], liked[], disliked[] } → 유저 작성 리뷰, 검증 없이 저장
 POST   /api/reviews/{id}/like         → 좋아요 토글 (review_likes 테이블로 중복 방지)
 ```
+
+### 4.4.1 책 자체 반응 (좋아요/싫어요) — 신규
+```
+POST   /api/books/{isbn}/reaction     { reaction: 'like' | 'dislike' } → book_reactions upsert
+                                       ⚠️ 리뷰 작성과 무관하게 독립적으로 남길 수 있는 반응
+                                       ⚠️ 이미 반대 반응이 있으면 덮어씀 (좋아요↔싫어요 상호 배타)
+DELETE /api/books/{isbn}/reaction     → 반응 취소 (중립 상태로)
+GET    /api/users/me/liked-books      → mypage "좋아한 책" 목록 (useUserProfile 또는 별도 훅에서 사용)
+```
+- UI: bookDetail/mypage의 기존 ❤️(좋아요)는 그대로 유지, 옆에 👎 아이콘 신규 추가. 찜하기(북마크)는 이번 스코프에서 별도 구현하지 않음
 
 ### 4.5 추천 (더미)
 ```
@@ -290,3 +316,4 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 | 리뷰 작성 검증 | 별도 금칙어/길이 검증 없이 그냥 저장 (추후 필요 시 추가) |
 | 오프라인 평가 데이터 | 이번 백엔드 스코프에서 완전히 제외, 별도 구글폼으로 수집 |
 | 카카오 로그인 | `users` 테이블에 `auth_provider`/`provider_id` 필드로 확장 (옵션 A, 별도 oauth_accounts 테이블 아님). 지금 당장 카카오 로그인 기능 자체를 구현하진 않지만, 스키마는 미리 확장 가능하게 반영 |
+| 책 자체 좋아요/싫어요 | 리뷰 좋아요(`review_likes`)와 별개로 `book_reactions` 테이블 신규. UI는 기존 ❤️(좋아요) 유지 + 👎(싫어요) 아이콘 추가, 상호 배타적 토글. 찜하기(북마크)는 이번 스코프 제외. 오프라인 평가(별도 팀원 이슈)의 positive/negative 신호로 활용 예정 |
