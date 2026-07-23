@@ -25,7 +25,7 @@
 2. 온보딩 데이터 저장 (선호 정서 7개 중 선택, 부담 요소 5개 중 선택)
 3. 유저 프로필 CRUD (`useUserProfile()` 연동)
 4. 도서 목록/상세 API (88권 시드 데이터 기반)
-5. 게시판 리뷰 CRUD (작성/조회/좋아요, 별도 검증·모더레이션 없이 저장만)
+5. 게시판 리뷰 CRUD (작성/조회/좋아요·싫어요 반응, 별도 검증·모더레이션 없이 저장만)
 6. 추천 API 더미 (랜덤 N권 반환)
 7. PostgreSQL 스키마 및 마이그레이션
 8. 로컬 개발 환경 (docker-compose로 FastAPI + Postgres 기동)
@@ -238,17 +238,17 @@ POST   /api/auth/kakao/callback { code } → 카카오 인가 코드 받아 토�
 
 ### 4.2 온보딩 / 프로필
 ```
-POST   /api/onboarding          { preferredEmotions[], avoidedTraits[] } → user_profiles upsert
 GET    /api/users/me/profile    → UserProfile (useUserProfile() 연동)
-PATCH  /api/users/me/profile    → 부분 수정 (마이페이지에서 취향 재설정 등)
+PATCH  /api/users/me/profile    { preferredEmotions[], avoidedTraits[] } (부분 허용) → user_profiles upsert
 ```
+- ⚠️ **온보딩 전용 `POST /api/onboarding`은 별도로 만들지 않는다**: 프론트는 `OnboardingPage`도 `MyPage`(취향 재설정)도 똑같이 `useUserProfile().updateProfile(partial)` 하나만 호출하고, 훅 레벨에서는 "최초 온보딩인지 이후 수정인지" 구분할 방법이 없다. 따라서 `updateProfile`은 항상 `PATCH /api/users/me/profile` 하나로만 연결하고, 이 엔드포인트가 `user_profiles` 행이 없으면 생성(upsert)까지 처리해야 한다.
 
 ### 4.3 도서
 ```
 GET    /api/books               → 88권 리스트 (useBooks())
 GET    /api/books/{isbn}        → 상세 (useBook, book_aspects 포함하여 IdentityRadarChart 데이터 제공)
-GET    /api/books/search?q=...  → search 화면용 실시간 필터
 ```
+- ⚠️ **`GET /api/books/search?q=...`는 만들 필요 없음**: `useBooks()`는 파라미터 없이 전체 목록만 반환하는 훅이고(5.2), `SearchPage`는 이 전체 목록을 받아 제목/작가로 클라이언트에서 필터링한다(88권 규모라 서버 검색 없이도 충분). 이전 버전 브리프의 이 엔드포인트는 실제 훅 시그니처와 맞지 않는 계획이었으므로 제거.
 
 ### 4.4 리뷰 / 게시판
 ```
@@ -258,8 +258,15 @@ GET    /api/reviews/{id}              → useReview(reviewId)
 POST   /api/reviews                   { isbn, content, emotion[], liked[], disliked[] } → 유저 작성 리뷰, 검증 없이 저장
 POST   /api/reviews/{id}/reaction     { reaction: 'like' | 'dislike' } → review_reactions upsert (상호 배타)
 DELETE /api/reviews/{id}/reaction     → 반응 취소
+GET    /api/users/me/review-reactions → { [reviewId]: 'like' | 'dislike' } 형태로 현재 유저의 전체 리뷰 반응 반환
 ```
 - ⚠️ 기존 `POST /api/reviews/{id}/like` 대신 위 방식으로 통일 (UI 목업에 좋아요/싫어요 버튼 둘 다 존재하므로 book_reactions와 동일 패턴 사용)
+- ⚠️ **`GET /api/users/me/review-reactions` 신규 추가 필요**: 프론트의 `useReviewReaction(reviewId)` 훅은 로그인 유저가 이 리뷰에 이미 남긴 반응("내 반응")을 화면 진입 시 즉시 알아야 좋아요/싫어요 버튼의 초기 활성 상태를 그릴 수 있는데, 기존 API 목록엔 이걸 조회하는 방법이 없었다. `Review` 타입(5.1) 자체에는 `myReaction` 같은 필드를 넣지 않고(스펙 100% 유지), 대신 `book_reactions`의 `GET /api/users/me/liked-books`와 동일한 패턴으로 별도 조회 엔드포인트를 둔다.
+- ⚠️ **필드명 매핑 (직렬화 규칙)**: `UI_DESIGN_SPEC.md` 5.1의 훅 반환 타입은 DB 컬럼명과 이름이 다르다. API 응답을 만들 때 아래처럼 변환해서 내려줄 것 (CLAUDE.md가 프론트 반환 타입 100% 유지를 요구하므로, 변환은 항상 백엔드 응답 직렬화 단에서 처리):
+  - `emotion_tags` (DB) → `emotion` (응답)
+  - `liked_points` (DB) → `liked` (응답)
+  - `disliked_points` (DB) → `disliked` (응답)
+  - `books.isbn` → `Book.id` (프론트는 별도 book id 개념이 없고 isbn 값을 그대로 `id`로 사용)
 
 ### 4.4.1 책 자체 반응 (좋아요/싫어요) — 신규
 ```
@@ -267,9 +274,11 @@ POST   /api/books/{isbn}/reaction     { reaction: 'like' | 'dislike' } → book_
                                        ⚠️ 리뷰 작성과 무관하게 독립적으로 남길 수 있는 반응
                                        ⚠️ 이미 반대 반응이 있으면 덮어씀 (좋아요↔싫어요 상호 배타)
 DELETE /api/books/{isbn}/reaction     → 반응 취소 (중립 상태로)
-GET    /api/users/me/liked-books      → mypage "좋아한 책" 목록 (useUserProfile 또는 별도 훅에서 사용)
+GET    /api/users/me/book-reactions   → { likedBookIds: string[], dislikedBookIds: string[] } (useUserProfile()이 이 응답으로 두 배열을 채움)
 ```
-- UI: bookDetail/mypage의 기존 ❤️(좋아요)는 그대로 유지, 옆에 👎 아이콘 신규 추가. 찜하기(북마크)는 이번 스코프에서 별도 구현하지 않음
+- ⚠️ **`GET /api/users/me/liked-books` 대신 위 `book-reactions` 형태로 통일**: `useUserProfile()` 훅이 `data.likedBookIds`(5.1 `UserProfile` 타입 그대로)와, 타입 외부의 추가 반환값 `dislikedBookIds`를 함께 내려주도록 구현돼 있어(마이페이지 "싫어요 표시한 책" 섹션용), 좋아요/싫어요를 한 번의 호출로 같이 받는 편이 프론트 훅 구조와 맞다. `dislikedBookIds`는 `UserProfile` 타입(5.1)에는 포함하지 않는다(스펙 100% 유지 — 마이페이지에 "싫어한 책" 리스트가 있을 뿐, 프로필 자체의 필드는 아님).
+- UI: 좋아요(❤️)/싫어요(👎) 버튼은 bookDetail뿐 아니라 홈/검색/마이페이지/마이페이지 전체보기의 `BookCard` 전체에 공용으로 존재(상호 배타 토글). 찜하기(북마크)는 이번 스코프에서 별도 구현하지 않음
+- ⚠️ **마이페이지 "전체 보기" 화면(좋아한 책/싫어요 표시한 책/내가 남긴 기록)은 별도 페이지네이션·신규 엔드포인트가 필요 없다.** 기존 `GET /api/books` + `GET /api/users/me/book-reactions`, `GET /api/reviews` + 로그인 유저 id로 클라이언트에서 필터링하는 지금 구조를 그대로 쓰면 된다(마이페이지에서는 이 중 앞쪽 3개만 미리보기로 자름).
 
 ### 4.5 추천 (더미)
 ```
@@ -288,6 +297,7 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 - Access token: 메모리 또는 상태 관리 라이브러리에 저장, API 요청 시 Authorization 헤더 자동 첨부하는 공통 fetch wrapper 작성
 - Refresh token: httpOnly 쿠키 권장 (프론트에서 직접 접근 불필요, 자동 전송) — 쿠키 방식이 부담되면 최소한 localStorage 대신 메모리+재로그인 유도 방식 검토
 - Access token 만료로 401 응답 시, 공통 wrapper에서 자동으로 `/api/auth/refresh` 호출 후 원래 요청 재시도하는 인터셉터 패턴 구현
+- ⚠️ **`constants/user.ts`의 `CURRENT_USER_ID = 'user_me'` 하드코딩 제거 필요**: `useCreateReview`(새 리뷰의 `userId`), `MyPage`/`MyListPage`("내가 남긴 기록" 필터링)가 전부 이 목업 상수를 직접 참조한다. 실제 로그인 연동 시 `/api/auth/me` 응답(또는 JWT 디코딩)에서 얻은 실제 유저 id로 교체해야 하며, 이 세 곳 전부를 빠짐없이 고쳐야 함.
 
 ---
 
@@ -296,6 +306,7 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 - `data/processed/books_enriched.json` (88건) → `books` + `book_aspects` 테이블
 - `data/processed/reviews.json` (440건) → `reviews` 테이블 (`source='llm_generated'`)
 - 마이그레이션/시드용 1회성 스크립트는 `backend/scripts/seed.py` 형태로 분리, 반복 실행해도 중복 적재되지 않도록 upsert 처리
+- ⚠️ **블로커**: 위 두 파일은 현재 레포 전체 브랜치 히스토리에 존재하지 않음(`final_book_list_88.csv`, `prompts/*`만 `data/processed/`에 있음). 이 단계 착수 전에 ML/데이터 담당자에게 파일 위치·생성 일정을 확인 필요.
 
 ---
 
@@ -324,3 +335,6 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 | 카카오 로그인 | `users` 테이블에 `auth_provider`/`provider_id` 필드로 확장 (옵션 A, 별도 oauth_accounts 테이블 아님). 지금 당장 카카오 로그인 기능 자체를 구현하진 않지만, 스키마는 미리 확장 가능하게 반영 |
 | 책 자체 좋아요/싫어요 | 리뷰 반응(`review_reactions`)과 별개로 `book_reactions` 테이블 신규. UI는 기존 ❤️(좋아요) 유지 + 👎(싫어요) 아이콘 추가, 상호 배타적 토글. 찜하기(북마크)는 이번 스코프 제외. 오프라인 평가(별도 팀원 이슈)의 positive/negative 신호로 활용 예정 |
 | 리뷰 좋아요/싫어요 | UI 목업(reviewDetail)에 좋아요/싫어요 버튼 둘 다 존재 확인됨 → `review_likes`를 `review_reactions`(reaction: like\|dislike)로 확장, book_reactions와 동일 패턴으로 통일. `reviews.dislike_count` 필드 추가 |
+| 마이페이지 목록 조회 | 좋아한 책/싫어요 표시한 책/내가 남긴 기록 3개 섹션 모두 기존 목록 API(`GET /api/books`, `GET /api/reviews`) + 반응 조회 API(`GET /api/users/me/book-reactions`, 로그인 유저 id)의 클라이언트 필터링만으로 충분. "전체 보기" 화면도 동일 데이터에서 개수 제한만 없앤 것이라 신규 엔드포인트 불필요 |
+| 리뷰 반응 초기 상태 조회 | `useReviewReaction(reviewId)`가 화면 진입 시 "내 반응"을 알아야 하므로 `GET /api/users/me/review-reactions`를 신규 추가(`book_reactions`의 `liked-books`와 동일 패턴). `Review` 타입(5.1)엔 반응 필드를 넣지 않음 |
+| `CURRENT_USER_ID` 목업 상수 | `useCreateReview`, `MyPage`, `MyListPage` 3곳에서 참조 중 → 로그인 연동 시 실제 인증 유저 id로 전부 교체 필요 |
