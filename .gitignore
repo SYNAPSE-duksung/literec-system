@@ -1,6 +1,14 @@
-# 작업 중 업데이트한 내용
-data/raw/*
+## 개발 진행 과정에서 추가 ##
+
+# data
+data/processed/*
+data/raw/top-list/*
+!data/processed/.gitkeep
 !data/raw/.gitkeep
+!data/raw/top-list/.gitkeep
+
+# 다음 항목은 최종 결정된 도서 항목이므로 원격 저장소에 업로드
+!data/processed/final_book_list_88.csv
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
