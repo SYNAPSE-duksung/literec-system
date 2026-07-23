@@ -1,23 +1,29 @@
+import type { MyListType } from '../types';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useBooks } from '../hooks/useBooks';
 import { useReviews } from '../hooks/useReviews';
 import { CURRENT_USER_ID } from '../constants/user';
 import { Avatar } from '../components/common/Avatar';
+import { Button } from '../components/common/Button';
 import { BookCard } from '../components/book/BookCard';
 import { ReviewCard } from '../components/review/ReviewCard';
 import './MyPage.css';
 
+const PREVIEW_LIMIT = 3;
+
 interface MyPageProps {
   onSelectBook: (bookId: string) => void;
   onSelectReview: (reviewId: string) => void;
+  onViewAll: (listType: MyListType) => void;
 }
 
-export function MyPage({ onSelectBook, onSelectReview }: MyPageProps) {
-  const { data: profile } = useUserProfile();
+export function MyPage({ onSelectBook, onSelectReview, onViewAll }: MyPageProps) {
+  const { data: profile, dislikedBookIds } = useUserProfile();
   const { data: books } = useBooks();
   const { data: reviews } = useReviews();
 
   const likedBooks = books.filter((book) => profile?.likedBookIds.includes(book.id));
+  const dislikedBooks = books.filter((book) => dislikedBookIds.includes(book.id));
   const myReviews = reviews.filter((review) => review.userId === CURRENT_USER_ID);
 
   return (
@@ -34,15 +40,42 @@ export function MyPage({ onSelectBook, onSelectReview }: MyPageProps) {
         </div>
       </div>
 
-      <p className="mypage__section-title">좋아한 책 {likedBooks.length}개</p>
+      <div className="mypage__section-header">
+        <p className="mypage__section-title">좋아한 책 {likedBooks.length}개</p>
+        {likedBooks.length > PREVIEW_LIMIT && (
+          <Button variant="text" onClick={() => onViewAll('likedBooks')}>
+            전체 보기
+          </Button>
+        )}
+      </div>
       {likedBooks.length === 0 && <p className="empty-state">아직 좋아한 책이 없어요</p>}
-      {likedBooks.map((book) => (
+      {likedBooks.slice(0, PREVIEW_LIMIT).map((book) => (
         <BookCard key={book.id} book={book} onClick={() => onSelectBook(book.id)} />
       ))}
 
-      <p className="mypage__section-title">내가 남긴 기록 {myReviews.length}개</p>
+      <div className="mypage__section-header">
+        <p className="mypage__section-title">싫어요 표시한 책 {dislikedBooks.length}개</p>
+        {dislikedBooks.length > PREVIEW_LIMIT && (
+          <Button variant="text" onClick={() => onViewAll('dislikedBooks')}>
+            전체 보기
+          </Button>
+        )}
+      </div>
+      {dislikedBooks.length === 0 && <p className="empty-state">아직 싫어요 표시한 책이 없어요</p>}
+      {dislikedBooks.slice(0, PREVIEW_LIMIT).map((book) => (
+        <BookCard key={book.id} book={book} onClick={() => onSelectBook(book.id)} />
+      ))}
+
+      <div className="mypage__section-header">
+        <p className="mypage__section-title">내가 남긴 기록 {myReviews.length}개</p>
+        {myReviews.length > PREVIEW_LIMIT && (
+          <Button variant="text" onClick={() => onViewAll('myReviews')}>
+            전체 보기
+          </Button>
+        )}
+      </div>
       {myReviews.length === 0 && <p className="empty-state">아직 남긴 기록이 없어요</p>}
-      {myReviews.map((review) => (
+      {myReviews.slice(0, PREVIEW_LIMIT).map((review) => (
         <ReviewCard key={review.id} review={review} onClick={() => onSelectReview(review.id)} />
       ))}
     </div>

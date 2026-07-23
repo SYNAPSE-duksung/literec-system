@@ -81,6 +81,8 @@ Claude Code에 이 문서를 통째로 제공하고 "섹션 X 기준으로 Y 화
 
 **하단 탭바 4개**: 홈 / 게시판 / 검색 / 마이페이지 — 어느 탭에서든 상시 노출 (상세/작성 화면 진입 시엔 숨김, 뒤로가기로 복귀)
 
+**마이페이지 → 전체 보기**: `[마이페이지 탭]` ──(항목 3개 초과 시 "전체 보기")──> `[마이페이지 전체 보기 (6.10.1)]` ──(뒤로가기/홈)──> 원래 화면. 책 카드 클릭 시 다른 화면과 동일하게 `[책 상세]`로 이동.
+
 ### UI 디자인 예시 (참고)
 
 > 원본 PDF에 모바일형/데스크탑형 와이어프레임 스크린샷이 포함되어 있습니다. 화면별 레이아웃 텍스트 명세는 섹션 6에 상세히 기술되어 있으니, 스크린샷이 필요하면 원본 PDF(`UI_명세서_초안.pdf`)를 함께 참고하세요.
@@ -169,6 +171,15 @@ interface SimilarReviewRecommendation {
 
 각 훅은 로딩/에러 상태를 함께 반환한다: `{ data, isLoading, isError }`
 
+**쓰기용 훅/추가 반환값** (위 표는 조회 전용, 아래는 상태를 변경하는 액션):
+
+| 훅 | 반환(추가분) | 설명 |
+|---|---|---|
+| `useUserProfile()` | `updateProfile(partial)` | 온보딩/마이페이지 취향 재설정 |
+| `useUserProfile()` | `dislikedBookIds`, `setBookReaction(bookId, reaction)` | 책 좋아요/싫어요 (상호 배타), `data.likedBookIds`와 연동. `BookCard`(홈/검색/마이페이지/마이페이지 전체보기/bookDetail 공용)가 이 훅으로 좋아요❤️/싫어요👎 아이콘 버튼 둘 다 렌더링 |
+| `useCreateReview()` | `createReview(input)` | 리뷰 작성 제출 |
+| `useReviewReaction(reviewId)` | `{ myReaction, setReaction }` | 리뷰 좋아요/싫어요 (상호 배타), 리뷰 상세 전용 |
+
 ---
 
 ## 6. 화면별 상세 설계 (와이어프레임 레벨)
@@ -244,6 +255,8 @@ BottomNav (홈 활성)
 TopHeader (뒤로가기 + 책 제목)
 
 표지(88×144) + 제목/작가/정서태그
+[좋아요 / 싫어요] 토글 버튼 (❤️ / 👎, 상호 배타) — useUserProfile()의 setBookReaction(bookId, reaction)
+  ⚠️ 마이페이지 "좋아한 책" 목록(likedBookIds)과 동일한 상태를 공유한다
 줄거리 본문
 
 [이 책의 결] 카드
@@ -293,8 +306,10 @@ TopHeader (뒤로가기 + 책 제목)
 [좋았던 점 / 아쉬웠던 점] 카드
 
 [좋아요 / 싫어요] 토글 버튼
-  - 좋아요: liked===true → 검정 채움, likeCount +1/-1 토글
-  - 싫어요: liked===false → 검정 채움 (좋아요와 상호 배타)
+  ⚠️ 이 반응 상태는 `Review.liked`(좋았던 점 텍스트 배열, 위 카드에서 사용)와 이름만 비슷할 뿐 무관한 별도 상태다.
+  useReviewReaction(reviewId) → { myReaction: 'like' | 'dislike' | null, setReaction }
+  - 좋아요: myReaction==='like' → 검정 채움, likeCount +1/-1 토글
+  - 싫어요: myReaction==='dislike' → 검정 채움 (좋아요와 상호 배타)
 
 ──────────────── (구분선, my-6) ────────────────
 
@@ -335,10 +350,28 @@ BottomNav (검색 활성)
 
 ```
 아바타 + 이름 + 선호 정서 요약 (useUserProfile)
-좋아한 책 N개 — [BookCard] × N (likedBookIds 기준 필터)
-내가 남긴 기록 N개 — [ReviewCard] × N (userId 기준 필터)
+
+좋아한 책 N개                    [N > 3이면 "전체 보기" 링크 → setScreen({ name: "myList", listType: "likedBooks" })]
+  [BookCard] × 최대 3 (likedBookIds 기준 필터, 미리보기)
+
+싫어요 표시한 책 N개              [N > 3이면 "전체 보기" 링크 → setScreen({ name: "myList", listType: "dislikedBooks" })]
+  [BookCard] × 최대 3 (dislikedBookIds 기준 필터, 미리보기)
+
+내가 남긴 기록 N개                [N > 3이면 "전체 보기" 링크 → setScreen({ name: "myList", listType: "myReviews" })]
+  [ReviewCard] × 최대 3 (userId 기준 필터, 미리보기)
+
 BottomNav (마이페이지 활성)
 ```
+- ⚠️ 세 섹션 모두 동일한 규칙: 미리보기는 최대 3개까지만 노출하고, 실제 개수가 3개를 초과할 때만 "전체 보기" 링크를 보여준다. 3개 이하면 링크 없이 있는 만큼만 표시.
+
+### 6.10.1 마이페이지 전체 보기 (`screen.name: "myList", listType`)
+
+```
+TopHeader (뒤로가기 + "좋아한 책" | "싫어요 표시한 책" | "내가 남긴 기록", 홈 아이콘)
+[BookCard] × N 또는 [ReviewCard] × N (미리보기와 동일한 필터, 개수 제한 없이 전체)
+없으면: "아직 ~이 없어요" 빈 상태 (섹션별 문구는 마이페이지와 동일하게 맞춤)
+```
+- 마이페이지 미리보기와 완전히 같은 데이터(같은 훅, 같은 필터)를 그대로 재사용하고, `slice` 개수 제한만 없앤 화면이다 — 별도 API/훅 추가 없음.
 
 ### 6.11 관리자 대시보드 (`screen.name: "admin"`, 내부용, 데스크탑 허용)
 
@@ -367,7 +400,7 @@ App
 │   └─ Avatar
 │
 ├─ book/
-│   ├─ BookCard              (홈, 검색, 마이페이지 공용)
+│   ├─ BookCard              (홈, 검색, 마이페이지, 마이페이지 전체보기 공용)
 │   ├─ IdentityRadarChart
 │   └─ XAINote
 │

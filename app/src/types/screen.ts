@@ -1,3 +1,5 @@
+export type MyListType = 'likedBooks' | 'dislikedBooks' | 'myReviews';
+
 export type Screen =
   | { name: 'login' }
   | { name: 'signup' }
@@ -8,7 +10,8 @@ export type Screen =
   | { name: 'reviewWrite'; bookId: string }
   | { name: 'reviewDetail'; reviewId: string }
   | { name: 'search' }
-  | { name: 'mypage' };
+  | { name: 'mypage' }
+  | { name: 'myList'; listType: MyListType };
 
 export type ScreenName = Screen['name'];
 

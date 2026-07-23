@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { Screen } from './types';
+import type { MyListType, Screen } from './types';
 import { TAB_SCREEN_NAMES } from './types';
 import { useBook } from './hooks/useBook';
 import { useReview } from './hooks/useReview';
@@ -15,8 +15,15 @@ import { BookDetailPage } from './pages/BookDetailPage';
 import { ReviewWritePage } from './pages/ReviewWritePage';
 import { ReviewDetailPage } from './pages/ReviewDetailPage';
 import { MyPage } from './pages/MyPage';
+import { MyListPage } from './pages/MyListPage';
 
 const ONBOARDING_STORAGE_KEY = 'literec:onboardingComplete';
+
+const MY_LIST_TITLES: Record<MyListType, string> = {
+  likedBooks: '좋아한 책',
+  dislikedBooks: '싫어요 표시한 책',
+  myReviews: '내가 남긴 기록',
+};
 
 export function App() {
   const [authed, setAuthed] = useState(false);
@@ -153,6 +160,11 @@ export function App() {
       onBack = goBack;
       rightSlot = homeButton;
       break;
+    case 'myList':
+      title = MY_LIST_TITLES[screen.listType];
+      onBack = goBack;
+      rightSlot = homeButton;
+      break;
   }
 
   return (
@@ -186,6 +198,15 @@ export function App() {
 
       {screen.name === 'mypage' && (
         <MyPage
+          onSelectBook={(bookId) => navigate({ name: 'bookDetail', bookId })}
+          onSelectReview={(reviewId) => navigate({ name: 'reviewDetail', reviewId })}
+          onViewAll={(listType) => navigate({ name: 'myList', listType })}
+        />
+      )}
+
+      {screen.name === 'myList' && (
+        <MyListPage
+          listType={screen.listType}
           onSelectBook={(bookId) => navigate({ name: 'bookDetail', bookId })}
           onSelectReview={(reviewId) => navigate({ name: 'reviewDetail', reviewId })}
         />
