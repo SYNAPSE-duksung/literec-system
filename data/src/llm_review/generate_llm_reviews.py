@@ -3,10 +3,10 @@ data/processed/books_naver.jsonl의 도서 정보(+perplexity_review)를 바탕�
 Upstage Solar API를 호출해 책마다 페르소나 리뷰 5개(호 2 / 불호 2 / 혼재 1)를
 생성하고 data/processed/llm_reviews.jsonl에 한 줄씩 append한다.
 
-사용법:
-  uv run python data/src/llm_review/generate_llm_reviews.py 0 0        # 인덱스 0번 책만
-  uv run python data/src/llm_review/generate_llm_reviews.py 0 87       # 전체
-  uv run python data/src/llm_review/generate_llm_reviews.py 0 87 --force  # 이미 처리된 isbn도 재생성
+사용법(data 폴더에 들어와서):
+  uv run python src/llm_review/generate_llm_reviews.py 0 0        # 인덱스 0번 책만
+  uv run python src/llm_review/generate_llm_reviews.py 0 87       # 전체
+  uv run python src/llm_review/generate_llm_reviews.py 0 87 --force  # 이미 처리된 isbn도 재생성
 
 이미 OUTPUT_PATH에 존재하는 isbn은 기본적으로 건너뛴다(재실행 시 중복 API 호출 방지).
 """
@@ -37,7 +37,7 @@ MAX_VALIDATION_RETRIES = 3
 REQUEST_TIMEOUT_SEC = 120
 
 EXPECTED_SENTIMENT_COUNTS = {"호": 2, "불호": 2, "혼재": 1}
-MIN_CONTENT_LENGTH = 800
+MIN_CONTENT_LENGTH = 700
 
 CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
 
