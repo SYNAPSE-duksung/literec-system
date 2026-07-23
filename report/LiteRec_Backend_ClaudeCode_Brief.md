@@ -110,13 +110,15 @@ reviews
 - liked_points (text[])
 - disliked_points (text[])
 - like_count (int, default 0)
+- dislike_count (int, default 0)
 - created_at
 
-review_likes             -- 좋아요 중복 방지용 조인 테이블
+review_reactions         -- 리뷰에 대한 좋아요/싫어요 (UI 목업 기준: 좋아요/싫어요 버튼 둘 다 존재)
 - review_id (fk)
 - user_id (fk)
+- reaction (enum: 'like' | 'dislike')
 - created_at
-- (review_id, user_id) unique
+- (review_id, user_id) unique   -- 한 유저당 리뷰 하나에 반응 하나만 (좋아요/싫어요 상호 배타)
 
 book_reactions           -- 책 자체에 대한 좋아요/싫어요 (리뷰 작성과 별개, mypage "좋아한 책" ❤️ 및 신규 👎 버튼)
 - user_id (fk → users.id)
@@ -131,14 +133,14 @@ erDiagram
     users ||--o{ refresh_tokens : "has"
     users ||--o| user_profiles : "has"
     users ||--o{ reviews : "writes"
-    users ||--o{ review_likes : "likes"
+    users ||--o{ review_reactions : "reacts"
     users ||--o{ book_reactions : "reacts"
 
     books ||--o| book_aspects : "has"
     books ||--o{ reviews : "has"
     books ||--o{ book_reactions : "receives"
 
-    reviews ||--o{ review_likes : "receives"
+    reviews ||--o{ review_reactions : "receives"
 
     users {
         uuid id PK
@@ -197,12 +199,14 @@ erDiagram
         array liked_points
         array disliked_points
         int like_count
+        int dislike_count
         timestamp created_at
     }
 
-    review_likes {
+    review_reactions {
         uuid review_id PK, FK
         uuid user_id PK, FK
+        string reaction
         timestamp created_at
     }
 
@@ -252,8 +256,10 @@ GET    /api/reviews?filter=...        → useReviews(filter?)  (board 목록)
 GET    /api/books/{isbn}/reviews      → useReviewsByBook(bookId)
 GET    /api/reviews/{id}              → useReview(reviewId)
 POST   /api/reviews                   { isbn, content, emotion[], liked[], disliked[] } → 유저 작성 리뷰, 검증 없이 저장
-POST   /api/reviews/{id}/like         → 좋아요 토글 (review_likes 테이블로 중복 방지)
+POST   /api/reviews/{id}/reaction     { reaction: 'like' | 'dislike' } → review_reactions upsert (상호 배타)
+DELETE /api/reviews/{id}/reaction     → 반응 취소
 ```
+- ⚠️ 기존 `POST /api/reviews/{id}/like` 대신 위 방식으로 통일 (UI 목업에 좋아요/싫어요 버튼 둘 다 존재하므로 book_reactions와 동일 패턴 사용)
 
 ### 4.4.1 책 자체 반응 (좋아요/싫어요) — 신규
 ```
@@ -316,4 +322,5 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 | 리뷰 작성 검증 | 별도 금칙어/길이 검증 없이 그냥 저장 (추후 필요 시 추가) |
 | 오프라인 평가 데이터 | 이번 백엔드 스코프에서 완전히 제외, 별도 구글폼으로 수집 |
 | 카카오 로그인 | `users` 테이블에 `auth_provider`/`provider_id` 필드로 확장 (옵션 A, 별도 oauth_accounts 테이블 아님). 지금 당장 카카오 로그인 기능 자체를 구현하진 않지만, 스키마는 미리 확장 가능하게 반영 |
-| 책 자체 좋아요/싫어요 | 리뷰 좋아요(`review_likes`)와 별개로 `book_reactions` 테이블 신규. UI는 기존 ❤️(좋아요) 유지 + 👎(싫어요) 아이콘 추가, 상호 배타적 토글. 찜하기(북마크)는 이번 스코프 제외. 오프라인 평가(별도 팀원 이슈)의 positive/negative 신호로 활용 예정 |
+| 책 자체 좋아요/싫어요 | 리뷰 반응(`review_reactions`)과 별개로 `book_reactions` 테이블 신규. UI는 기존 ❤️(좋아요) 유지 + 👎(싫어요) 아이콘 추가, 상호 배타적 토글. 찜하기(북마크)는 이번 스코프 제외. 오프라인 평가(별도 팀원 이슈)의 positive/negative 신호로 활용 예정 |
+| 리뷰 좋아요/싫어요 | UI 목업(reviewDetail)에 좋아요/싫어요 버튼 둘 다 존재 확인됨 → `review_likes`를 `review_reactions`(reaction: like\|dislike)로 확장, book_reactions와 동일 패턴으로 통일. `reviews.dislike_count` 필드 추가 |
