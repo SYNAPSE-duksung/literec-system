@@ -22,7 +22,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from prompt_builder import build_prompt, load_few_shot_example, load_personas
+from prompt_builder import (
+    build_prompt,
+    build_single_review_prompt,
+    load_few_shot_example,
+    load_personas,
+)
 
 JSONL_PATH = Path(__file__).parent.parent.parent / "processed" / "books_naver.jsonl"
 OUTPUT_PATH = Path(__file__).parent.parent.parent / "processed" / "llm_reviews.jsonl"
@@ -33,7 +38,8 @@ DEFAULT_MODEL = "solar-pro3-260323"
 
 REQUEST_INTERVAL_SEC = 1.0
 MAX_RETRIES = 3
-MAX_VALIDATION_RETRIES = 3
+MAX_VALIDATION_RETRIES = 3  # 페르소나/구성(치명적 오류) 재시도 횟수
+MAX_LENGTH_RETRIES = 3  # 분량 미달 리뷰 1개당 재생성 재시도 횟수
 REQUEST_TIMEOUT_SEC = 120
 
 EXPECTED_SENTIMENT_COUNTS = {"호": 2, "불호": 2, "혼재": 1}
@@ -95,23 +101,37 @@ def parse_reviews(raw_content: str) -> list[dict]:
     return data["reviews"]
 
 
-def validate_reviews(reviews: list[dict], valid_personas: set[str]) -> list[str]:
+def parse_single_review_content(raw_content: str) -> str:
+    cleaned = CODE_FENCE_RE.sub("", raw_content).strip()
+    data = json.loads(cleaned)
+    return data["content"]
+
+
+def validate_structure(reviews: list[dict], valid_personas: set[str]) -> list[str]:
+    """치명적 오류만 검증한다: 리뷰 개수, 정의되지 않은 페르소나, 페르소나 중복,
+    호/불호/혼재 구성. 분량은 여기서 다루지 않고 별도 단계에서 부분 재생성한다.
+
+    정의되지 않은 페르소나가 하나라도 있으면 무슨 일이 있어도 통과시키지 않는다
+    (호출부에서 재시도 소진 시 best-effort 저장 없이 예외를 던진다).
+    """
     issues = []
 
     if len(reviews) != 5:
         issues.append(f"리뷰 개수가 5개가 아님: {len(reviews)}개")
+        return issues
 
     sentiment_counts: dict[str, int] = {}
     personas_seen: set[str] = set()
     for review in reviews:
-        sentiment_counts[review["sentiment"]] = sentiment_counts.get(review["sentiment"], 0) + 1
-        if review["persona"] not in valid_personas:
-            issues.append(f"정의되지 않은 페르소나: {review['persona']}")
-        if review["persona"] in personas_seen:
-            issues.append(f"페르소나 중복: {review['persona']}")
-        personas_seen.add(review["persona"])
-        if len(review["content"]) < MIN_CONTENT_LENGTH:
-            issues.append(f"{review['persona']} 리뷰 길이 부족: {len(review['content'])}자")
+        persona = review.get("persona")
+        sentiment_counts[review.get("sentiment")] = (
+            sentiment_counts.get(review.get("sentiment"), 0) + 1
+        )
+        if persona not in valid_personas:
+            issues.append(f"정의되지 않은 페르소나: {persona}")
+        if persona in personas_seen:
+            issues.append(f"페르소나 중복: {persona}")
+        personas_seen.add(persona)
 
     if sentiment_counts != EXPECTED_SENTIMENT_COUNTS:
         issues.append(f"호/불호/혼재 구성이 기대와 다름: {sentiment_counts}")
@@ -119,27 +139,94 @@ def validate_reviews(reviews: list[dict], valid_personas: set[str]) -> list[str]
     return issues
 
 
+def find_short_review_indices(reviews: list[dict]) -> list[int]:
+    return [i for i, review in enumerate(reviews) if len(review["content"]) < MIN_CONTENT_LENGTH]
+
+
+def regenerate_short_reviews(
+    book: dict,
+    reviews: list[dict],
+    api_key: str,
+    model: str,
+    personas: list[dict],
+    few_shot_example: dict,
+) -> list[dict]:
+    """분량 미달 리뷰만 골라 같은 페르소나/sentiment로 본문만 다시 쓴다.
+
+    persona/sentiment는 그대로 고정한 채 content만 재생성하므로, 이 과정에서
+    페르소나가 재배정되는 일이 없어 다른 리뷰와의 페르소나 중복이 발생할 수 없다.
+    재시도마다 가장 긴 버전만 남기고, 끝까지 기준을 못 넘으면 그 최장 버전을 사용한다.
+    """
+    persona_by_name = {p["name"]: p for p in personas}
+
+    for idx in find_short_review_indices(reviews):
+        review = reviews[idx]
+        persona = persona_by_name[review["persona"]]
+        best_content = review["content"]
+
+        for attempt in range(1, MAX_LENGTH_RETRIES + 1):
+            single_prompt = build_single_review_prompt(
+                book, persona, review["sentiment"], best_content, few_shot_example, MIN_CONTENT_LENGTH
+            )
+            try:
+                raw = call_upstage(single_prompt, api_key, model)
+                new_content = parse_single_review_content(raw)
+            except Exception as e:
+                print(f"  [{review['persona']} 분량 재생성 {attempt} 실패] {e}", file=sys.stderr)
+                continue
+
+            if len(new_content) > len(best_content):
+                best_content = new_content
+            print(
+                f"  [{review['persona']} 분량 재생성 {attempt}] "
+                f"{len(new_content)}자 (최장 기록 {len(best_content)}자)",
+                file=sys.stderr,
+            )
+            if len(best_content) >= MIN_CONTENT_LENGTH:
+                break
+
+        if len(best_content) < MIN_CONTENT_LENGTH:
+            print(
+                f"  [경고] {review['persona']} 리뷰가 끝내 {MIN_CONTENT_LENGTH}자를 넘지 못해 "
+                f"최장 버전({len(best_content)}자)만 남김",
+                file=sys.stderr,
+            )
+        review["content"] = best_content
+
+    return reviews
+
+
 def generate_reviews_with_retry(
-    prompt: str, api_key: str, model: str, valid_personas: set[str]
+    book: dict,
+    prompt: str,
+    api_key: str,
+    model: str,
+    valid_personas: set[str],
+    personas: list[dict],
+    few_shot_example: dict,
 ) -> list[dict]:
     reviews: list[dict] = []
     issues: list[str] = []
     current_prompt = prompt
+
     for attempt in range(1, MAX_VALIDATION_RETRIES + 1):
         raw_content = call_upstage(current_prompt, api_key, model)
         reviews = parse_reviews(raw_content)
-        issues = validate_reviews(reviews, valid_personas)
+        issues = validate_structure(reviews, valid_personas)
         if not issues:
-            return reviews
-        print(f"  [검증 재시도 {attempt}] {issues}", file=sys.stderr)
+            break
+        print(f"  [구성 검증 재시도 {attempt}] {issues}", file=sys.stderr)
         issue_text = "\n".join(f"- {issue}" for issue in issues)
         current_prompt = (
             f"{prompt}\n\n"
             f"[이전 시도의 문제점 - 이번엔 반드시 고쳐서 다시 작성할 것]\n{issue_text}"
         )
+    else:
+        raise RuntimeError(
+            f"페르소나/구성 검증을 통과하지 못해 생성을 포기함(저장하지 않음): {issues}"
+        )
 
-    print(f"  [경고] 검증을 통과하지 못해 best-effort로 저장함: {issues}", file=sys.stderr)
-    return reviews
+    return regenerate_short_reviews(book, reviews, api_key, model, personas, few_shot_example)
 
 
 def build_output_records(book: dict, reviews: list[dict]) -> list[dict]:
@@ -206,7 +293,9 @@ def main():
         print(f"[{i}] {book['title']} (ISBN {isbn}) - 생성 중...", file=sys.stderr)
         try:
             prompt = build_prompt(book, personas, few_shot_example)
-            reviews = generate_reviews_with_retry(prompt, api_key, model, valid_persona_names)
+            reviews = generate_reviews_with_retry(
+                book, prompt, api_key, model, valid_persona_names, personas, few_shot_example
+            )
             records = build_output_records(book, reviews)
         except Exception as e:
             print(f"  [실패] {e}", file=sys.stderr)

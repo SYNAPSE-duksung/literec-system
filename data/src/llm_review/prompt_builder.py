@@ -45,15 +45,17 @@ PROMPT_TEMPLATE = """[책 정보]
 - 5개 리뷰 내에서 동일한 페르소나 중복 사용 금지.
 
 각 리뷰 본문 작성 조건:
-- 길이: 반드시 700자 이상 (공백 포함, 페르소나마다 편차를 줄 것). 700자에 못 미치면 안 됨.
+- 길이: 반드시 800자 이상 (공백 포함, 페르소나마다 편차를 줄 것). 800자에 못 미치면 안 됨.
   이는 매우 중요한 조건이며, 짧게 쓰는 것보다 우선한다.
-  content는 정확히 12~14개의 문장으로 작성할 것 (문장 수를 세어가며 쓸 것). 각 문장은
-  구체적인 장면·감정·생각·비유를 담아 충분히 상세하게 쓰고, 단순한 사실 나열이나 5~8문장
-  짜리 짧은 요약형 리뷰는 금지.
-  글을 다 쓴 후 스스로 분량이 700자에 못 미친다고 판단되면, 문장을 추가하거나 각 문장을
-  더 구체적으로 늘려써서 분량을 채운 뒤 출력할 것.
+  content의 각 문장은 구체적인 장면·감정·생각·비유를 담아 충분히 상세하게 쓰고, 단순한 사실 나열이나 5~8문장 짜리 짧은 요약형 리뷰는 금지.
+  글을 다 쓴 후 스스로 분량이 800자에 못 미친다고 판단되면, 문장을 추가하거나 각 문장을 더 구체적으로 늘려써서 분량을 채운 뒤 출력할 것.
 - 실제 독자가 개인 블로그나 SNS에 올린 솔직한 감상 톤으로 작성
 - 작가의 다른 작품 제목 등 실제로 확인되지 않는 구체적 정보는 『X』, 『Y』 같은 placeholder로 쓰지 말고, "전작에서도" 처럼 제목을 특정하지 않는 방식으로 우회할 것
+- 지금 리뷰하는 이 책의 제목에 문장부호가 필요할 경우 따옴표 정도만 사용할 것.
+  개인 블로그·SNS 글에서는 책 제목에 부호(「」,『』) 없이 자연스럽게 언급하거나 필요하면 작은따옴표 정도만 쓴다.
+  책 제목 뿐만 아니어도 「」,『』 문장부호는 절대로 사용하지 말 것. 이를 절대로 어겨서는 안된다.
+- 글자가 깨지거나(예: □, �, 알아볼 수 없는 기호) 실제로 존재하지 않는 이상한 유니코드 문자가 절대 섞여 들어가지 않도록 할 것.
+  정상적인 한글·영문·숫자·일반적인 문장부호만 사용하고, 출력 전에 이상한 문자가 없는지 스스로 검토할 것.
 - 결말이나 반전의 직접적인 내용 공개 금지
   (예: "결말이 열린 결말이라 여운이 남는다" 수준은 OK, "주인공이 ~한다" 식의 직접 서술은 금지)
 - 아래 5개 축 중 3개 이상을 자연스럽게 포함할 것(요소를 명시하지 말고 내용에 자연스럽게 포함되도록):
@@ -68,6 +70,9 @@ PROMPT_TEMPLATE = """[책 정보]
 아래는 참고용으로 제공되는 리뷰 본문 예시이다. 실제 답변에 이 내용을 그대로 쓰거나 언급하지 말고, 길이·문장 수·톤만 참고할 것.
 
 {few_shot_review}
+
+- 위 예시처럼 개인적인 감상이 드러나도록 작성할 것.
+- 또한, 확정적인 어투보다는 ~라 생각한다, ~라고 봤다 같은 개인적인 기록 느낌으로 작성할 것.
 
 출력 형식:
 아래 JSON 형식으로만 출력할 것. 다른 설명, 마크다운, 코드블록 표시 없이 JSON 객체 하나만 출력.
@@ -116,5 +121,86 @@ def build_prompt(book: dict, personas: list[dict], few_shot_example: dict) -> st
         description=book["description"],
         perplexity_review=book["perplexity_review"],
         persona_block=format_persona_block(personas),
+        few_shot_review=few_shot_example["content"].strip(),
+    )
+
+
+SINGLE_REVIEW_PROMPT_TEMPLATE = """[책 정보]
+- 제목: {title}
+- 작가: {author}
+- 출판사: {publisher}
+- ISBN: {isbn}
+- 책 소개: {description}
+
+[Perplexity 검색 결과]
+{perplexity_review}
+
+[페르소나 - 반드시 이 페르소나를 유지할 것, 변경 금지]
+{persona_name}
+{persona_description}
+(작성 톤: {persona_tone})
+
+[sentiment - 반드시 이 값을 유지할 것, 변경 금지]
+{sentiment}
+
+---
+
+[지시사항]
+아래는 위 페르소나·sentiment로 작성했던 리뷰인데 분량이 부족해서 다시 써야 해.
+
+[이전 작성본 - 분량 부족(공백 포함 {prev_length}자)]
+{prev_content}
+
+이전 작성본의 관점과 어조는 유지하되, 장면·감정·생각·비유를 더 구체적으로 늘려 쓰고
+단순 요약이나 문장 나열로 분량만 채우지 말 것. 이전 작성본을 그대로 복사하지 말고
+실제로 더 상세하게 다시 써서 완성할 것.
+반드시 공백 포함 {min_length}자 이상이 되도록 작성할 것. 이는 가장 중요한 조건이다.
+글을 다 쓴 후 스스로 분량이 {min_length}자에 못 미친다고 판단되면, 문장을 추가하거나
+각 문장을 더 구체적으로 늘려써서 분량을 채운 뒤 출력할 것.
+실제 독자가 개인 블로그나 SNS에 올린 솔직한 감상 톤으로 작성.
+작가의 다른 작품 제목 등 실제로 확인되지 않는 구체적 정보는 『X』, 『Y』 같은 placeholder로
+쓰지 말고, "전작에서도" 처럼 제목을 특정하지 않는 방식으로 우회할 것.
+지금 리뷰하는 이 책의 제목도 『{title}』, 「{title}」 같은 격식체 서명 부호로 감싸지 말 것.
+개인 블로그·SNS 글에서는 책 제목을 그런 부호 없이 자연스럽게 언급하거나 필요하면 작은따옴표 정도만 쓴다.
+같은 리뷰 안에서 제목을 여러 번 언급하더라도 표기 방식을 통일할 것.
+글자가 깨지거나(예: □, �, 알아볼 수 없는 기호) 실제로 존재하지 않는 이상한 유니코드 문자가
+절대 섞여 들어가지 않도록 할 것. 정상적인 한글·영문·숫자·일반적인 문장부호만 사용하고,
+출력 전에 이상한 문자가 없는지 스스로 검토할 것.
+결말이나 반전의 직접적인 내용 공개 금지.
+LLM 특유의 '**'같은 볼드체와 마크다운 형식을 쓰지 말고 그냥 텍스트 형식으로 작성.
+
+[예시 - 분량·문체·형식 참고용, 내용은 언급하지 말 것]
+{few_shot_review}
+
+출력 형식:
+아래 JSON 형식으로만 출력할 것. 다른 설명, 마크다운, 코드블록 표시 없이 JSON 객체 하나만 출력.
+{{
+  "content": "(다시 쓴 리뷰 본문)"
+}}
+"""
+
+
+def build_single_review_prompt(
+    book: dict,
+    persona: dict,
+    sentiment: str,
+    prev_content: str,
+    few_shot_example: dict,
+    min_length: int,
+) -> str:
+    return SINGLE_REVIEW_PROMPT_TEMPLATE.format(
+        title=book["title"],
+        author=book["author"],
+        publisher=book["publisher"],
+        isbn=book["isbn"],
+        description=book["description"],
+        perplexity_review=book["perplexity_review"],
+        persona_name=persona["name"],
+        persona_description=persona["description"].strip(),
+        persona_tone=persona["tone"].strip(),
+        sentiment=sentiment,
+        prev_length=len(prev_content),
+        prev_content=prev_content,
+        min_length=min_length,
         few_shot_review=few_shot_example["content"].strip(),
     )
