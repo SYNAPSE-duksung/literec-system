@@ -12,6 +12,7 @@ from pathlib import Path
 import yaml
 
 PERSONAS_PATH = Path(__file__).parent / "personas.yaml"
+FEW_SHOT_PATH = Path(__file__).parent / "few_shot_example.yaml"
 
 PROMPT_TEMPLATE = """[책 정보]
 - 제목: {title}
@@ -63,6 +64,11 @@ PROMPT_TEMPLATE = """[책 정보]
     ⑤ 독서_경험_맥락: 몰입도, 재독 여부 등
 - LLM 특유의 '**'같은 볼드 체와 마크다운 형식을 쓰지 말고 그냥 텍스트 형식으로 작성
 
+[예시 - 리뷰 본문 하나, 분량·문체·형식 참고용]
+아래는 참고용으로 제공되는 리뷰 본문 예시이다. 실제 답변에 이 내용을 그대로 쓰거나 언급하지 말고, 길이·문장 수·톤만 참고할 것.
+
+{few_shot_review}
+
 출력 형식:
 아래 JSON 형식으로만 출력할 것. 다른 설명, 마크다운, 코드블록 표시 없이 JSON 객체 하나만 출력.
 {{
@@ -85,6 +91,11 @@ def load_personas(yaml_path: Path = PERSONAS_PATH) -> list[dict]:
     return data["personas"]
 
 
+def load_few_shot_example(yaml_path: Path = FEW_SHOT_PATH) -> dict:
+    with open(yaml_path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
 def format_persona_block(personas: list[dict]) -> str:
     blocks = []
     for i, persona in enumerate(personas, start=1):
@@ -96,7 +107,7 @@ def format_persona_block(personas: list[dict]) -> str:
     return "\n\n".join(blocks)
 
 
-def build_prompt(book: dict, personas: list[dict]) -> str:
+def build_prompt(book: dict, personas: list[dict], few_shot_example: dict) -> str:
     return PROMPT_TEMPLATE.format(
         title=book["title"],
         author=book["author"],
@@ -105,4 +116,5 @@ def build_prompt(book: dict, personas: list[dict]) -> str:
         description=book["description"],
         perplexity_review=book["perplexity_review"],
         persona_block=format_persona_block(personas),
+        few_shot_review=few_shot_example["content"].strip(),
     )

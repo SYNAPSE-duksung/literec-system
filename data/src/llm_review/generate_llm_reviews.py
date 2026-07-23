@@ -22,7 +22,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from prompt_builder import build_prompt, load_personas
+from prompt_builder import build_prompt, load_few_shot_example, load_personas
 
 JSONL_PATH = Path(__file__).parent.parent.parent / "processed" / "books_naver.jsonl"
 OUTPUT_PATH = Path(__file__).parent.parent.parent / "processed" / "llm_reviews.jsonl"
@@ -187,6 +187,7 @@ def main():
         raise ValueError(f"인덱스 범위가 올바르지 않습니다. (0 ~ {len(books) - 1} 사이여야 함)")
 
     personas = load_personas()
+    few_shot_example = load_few_shot_example()
     valid_persona_names = {p["name"] for p in personas}
     processed_isbns = set() if force else load_processed_isbns(OUTPUT_PATH)
 
@@ -204,7 +205,7 @@ def main():
 
         print(f"[{i}] {book['title']} (ISBN {isbn}) - 생성 중...", file=sys.stderr)
         try:
-            prompt = build_prompt(book, personas)
+            prompt = build_prompt(book, personas, few_shot_example)
             reviews = generate_reviews_with_retry(prompt, api_key, model, valid_persona_names)
             records = build_output_records(book, reviews)
         except Exception as e:
