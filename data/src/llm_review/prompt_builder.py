@@ -154,9 +154,12 @@ SINGLE_REVIEW_PROMPT_TEMPLATE = """[책 정보]
 이전 작성본의 관점과 어조는 유지하되, 장면·감정·생각·비유를 더 구체적으로 늘려 쓰고
 단순 요약이나 문장 나열로 분량만 채우지 말 것. 이전 작성본을 그대로 복사하지 말고
 실제로 더 상세하게 다시 써서 완성할 것.
-반드시 공백 포함 {min_length}자 이상이 되도록 작성할 것. 이는 가장 중요한 조건이다.
-글을 다 쓴 후 스스로 분량이 {min_length}자에 못 미친다고 판단되면, 문장을 추가하거나
-각 문장을 더 구체적으로 늘려써서 분량을 채운 뒤 출력할 것.
+반드시 공백 포함 {min_length}자 이상 {max_length}자 이하가 되도록 작성할 것
+(목표 범위: {min_length}~{max_length}자). 이는 가장 중요한 조건이다.
+{min_length}자에 못 미치면 문장을 추가하거나 각 문장을 더 구체적으로 늘려 분량을 채우고,
+반대로 {max_length}자를 넘길 것 같으면 문장을 덜어내거나 늘어지는 부분을 줄여서
+반드시 {max_length}자 이내로 맞춘 뒤 출력할 것. 상한선을 넘기는 것은 하한선을 못 채우는
+것만큼 심각한 실패다.
 실제 독자가 개인 블로그나 SNS에 올린 솔직한 감상 톤으로 작성.
 작가의 다른 작품 제목 등 실제로 확인되지 않는 구체적 정보는 『X』, 『Y』 같은 placeholder로
 쓰지 말고, "전작에서도" 처럼 제목을 특정하지 않는 방식으로 우회할 것.
@@ -187,6 +190,7 @@ def build_single_review_prompt(
     prev_content: str,
     few_shot_example: dict,
     min_length: int,
+    max_length: int,
 ) -> str:
     return SINGLE_REVIEW_PROMPT_TEMPLATE.format(
         title=book["title"],
@@ -202,5 +206,6 @@ def build_single_review_prompt(
         prev_length=len(prev_content),
         prev_content=prev_content,
         min_length=min_length,
+        max_length=max_length,
         few_shot_review=few_shot_example["content"].strip(),
     )

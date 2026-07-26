@@ -44,6 +44,7 @@ REQUEST_TIMEOUT_SEC = 120
 
 EXPECTED_SENTIMENT_COUNTS = {"호": 2, "불호": 2, "혼재": 1}
 MIN_CONTENT_LENGTH = 700
+MAX_CONTENT_LENGTH = 1500
 
 CODE_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
 
@@ -143,6 +144,16 @@ def find_short_review_indices(reviews: list[dict]) -> list[int]:
     return [i for i, review in enumerate(reviews) if len(review["content"]) < MIN_CONTENT_LENGTH]
 
 
+def distance_to_length_range(text: str) -> int:
+    """MIN_CONTENT_LENGTH~MAX_CONTENT_LENGTH 범위까지의 거리(범위 안이면 0)."""
+    n = len(text)
+    if n < MIN_CONTENT_LENGTH:
+        return MIN_CONTENT_LENGTH - n
+    if n > MAX_CONTENT_LENGTH:
+        return n - MAX_CONTENT_LENGTH
+    return 0
+
+
 def regenerate_short_reviews(
     book: dict,
     reviews: list[dict],
@@ -155,7 +166,8 @@ def regenerate_short_reviews(
 
     persona/sentiment는 그대로 고정한 채 content만 재생성하므로, 이 과정에서
     페르소나가 재배정되는 일이 없어 다른 리뷰와의 페르소나 중복이 발생할 수 없다.
-    재시도마다 가장 긴 버전만 남기고, 끝까지 기준을 못 넘으면 그 최장 버전을 사용한다.
+    MIN_CONTENT_LENGTH~MAX_CONTENT_LENGTH 범위에 드는 결과가 나오면 즉시 채택하고,
+    끝까지 범위에 못 들면 그중 가장 범위에 가까운(짧으면 가장 긴, 넘치면 가장 짧은) 버전을 쓴다.
     """
     persona_by_name = {p["name"]: p for p in personas}
 
@@ -163,10 +175,17 @@ def regenerate_short_reviews(
         review = reviews[idx]
         persona = persona_by_name[review["persona"]]
         best_content = review["content"]
+        in_range_content = None
 
         for attempt in range(1, MAX_LENGTH_RETRIES + 1):
             single_prompt = build_single_review_prompt(
-                book, persona, review["sentiment"], best_content, few_shot_example, MIN_CONTENT_LENGTH
+                book,
+                persona,
+                review["sentiment"],
+                best_content,
+                few_shot_example,
+                MIN_CONTENT_LENGTH,
+                MAX_CONTENT_LENGTH,
             )
             try:
                 raw = call_upstage(single_prompt, api_key, model)
@@ -175,20 +194,35 @@ def regenerate_short_reviews(
                 print(f"  [{review['persona']} 분량 재생성 {attempt} 실패] {e}", file=sys.stderr)
                 continue
 
-            if len(new_content) > len(best_content):
-                best_content = new_content
+            length = len(new_content)
             print(
-                f"  [{review['persona']} 분량 재생성 {attempt}] "
-                f"{len(new_content)}자 (최장 기록 {len(best_content)}자)",
+                f"  [{review['persona']} 분량 재생성 {attempt}] {length}자 "
+                f"(목표 {MIN_CONTENT_LENGTH}~{MAX_CONTENT_LENGTH}자)",
                 file=sys.stderr,
             )
-            if len(best_content) >= MIN_CONTENT_LENGTH:
+
+            if MIN_CONTENT_LENGTH <= length <= MAX_CONTENT_LENGTH:
+                in_range_content = new_content
                 break
+
+            # 범위 밖이면, 기존 best보다 "범위에 더 가까운" 경우에만 교체한다.
+            if distance_to_length_range(new_content) < distance_to_length_range(best_content):
+                best_content = new_content
+
+        if in_range_content is not None:
+            review["content"] = in_range_content
+            continue
 
         if len(best_content) < MIN_CONTENT_LENGTH:
             print(
                 f"  [경고] {review['persona']} 리뷰가 끝내 {MIN_CONTENT_LENGTH}자를 넘지 못해 "
-                f"최장 버전({len(best_content)}자)만 남김",
+                f"최선 버전({len(best_content)}자)만 남김",
+                file=sys.stderr,
+            )
+        elif len(best_content) > MAX_CONTENT_LENGTH:
+            print(
+                f"  [경고] {review['persona']} 리뷰가 {MAX_CONTENT_LENGTH}자를 초과한 채로 "
+                f"저장됨({len(best_content)}자)",
                 file=sys.stderr,
             )
         review["content"] = best_content
