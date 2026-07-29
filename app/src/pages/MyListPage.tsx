@@ -2,7 +2,6 @@ import type { MyListType } from '../types';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useBooks } from '../hooks/useBooks';
 import { useReviews } from '../hooks/useReviews';
-import { CURRENT_USER_ID } from '../constants/user';
 import { BookCard } from '../components/book/BookCard';
 import { ReviewCard } from '../components/review/ReviewCard';
 import './MyListPage.css';
@@ -25,7 +24,7 @@ export function MyListPage({ listType, onSelectBook, onSelectReview }: MyListPag
   const { data: reviews } = useReviews();
 
   if (listType === 'myReviews') {
-    const myReviews = reviews.filter((review) => review.userId === CURRENT_USER_ID);
+    const myReviews = reviews.filter((review) => review.userId === profile?.userId);
     return (
       <div className="my-list-page">
         {myReviews.length === 0 && <p className="empty-state">{EMPTY_TEXT[listType]}</p>}

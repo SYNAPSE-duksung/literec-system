@@ -2,7 +2,6 @@ import type { MyListType } from '../types';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useBooks } from '../hooks/useBooks';
 import { useReviews } from '../hooks/useReviews';
-import { CURRENT_USER_ID } from '../constants/user';
 import { Avatar } from '../components/common/Avatar';
 import { Button } from '../components/common/Button';
 import { BookCard } from '../components/book/BookCard';
@@ -24,7 +23,7 @@ export function MyPage({ onSelectBook, onSelectReview, onViewAll }: MyPageProps)
 
   const likedBooks = books.filter((book) => profile?.likedBookIds.includes(book.id));
   const dislikedBooks = books.filter((book) => dislikedBookIds.includes(book.id));
-  const myReviews = reviews.filter((review) => review.userId === CURRENT_USER_ID);
+  const myReviews = reviews.filter((review) => review.userId === profile?.userId);
 
   return (
     <div className="mypage">

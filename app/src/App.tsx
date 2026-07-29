@@ -1,13 +1,16 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { MyListType, Screen } from './types';
 import { TAB_SCREEN_NAMES } from './types';
 import { useBook } from './hooks/useBook';
 import { useReview } from './hooks/useReview';
 import { Shell } from './components/shell/Shell';
 import { SearchIcon, HomeIcon } from './icons';
+import { apiFetch, registerAuthExpiredHandler } from './lib/apiClient';
+import { clearAuth, setAccessToken, setCurrentUserId } from './lib/authToken';
 import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
+import { SignupPage, type SignupInput } from './pages/SignupPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { UserProfileProvider } from './state/UserProfileContext';
 import { HomePage } from './pages/HomePage';
 import { SearchPage } from './pages/SearchPage';
 import { BoardPage } from './pages/BoardPage';
@@ -25,13 +28,65 @@ const MY_LIST_TITLES: Record<MyListType, string> = {
   myReviews: '내가 남긴 기록',
 };
 
+interface AuthUser {
+  id: string;
+  email: string | null;
+  name: string;
+}
+
+interface LoginResponse {
+  access_token: string;
+  user: AuthUser;
+}
+
 export function App() {
-  const [authed, setAuthed] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(
     () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true',
   );
   const [screen, setScreen] = useState<Screen>({ name: 'login' });
   const [history, setHistory] = useState<Screen[]>([]);
+
+  const applyLogin = (result: LoginResponse) => {
+    setAccessToken(result.access_token);
+    setCurrentUserId(result.user.id);
+    setCurrentUser(result.user);
+  };
+
+  // 401이 refresh로도 복구되지 않으면(리프레시 쿠키 만료 등) 로그인 화면으로 되돌린다.
+  useEffect(() => {
+    registerAuthExpiredHandler(() => {
+      setCurrentUser(null);
+      setScreen({ name: 'login' });
+    });
+    return () => registerAuthExpiredHandler(null);
+  }, []);
+
+  // 새로고침 시에도 refresh 쿠키가 살아있으면 조용히 재로그인 시도한다.
+  useEffect(() => {
+    fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('no session');
+        const body = (await res.json()) as { access_token: string };
+        setAccessToken(body.access_token);
+        const me = await apiFetch<AuthUser>('/api/auth/me');
+        setCurrentUserId(me.id);
+        setCurrentUser(me);
+        // screen은 초기값 'login'에 그대로 머물러 있으므로, 재로그인에 성공하면
+        // 로그인 이후 화면(home/onboarding)으로 직접 옮겨줘야 한다.
+        setScreen((prev) =>
+          prev.name === 'login' || prev.name === 'signup'
+            ? { name: onboardingComplete ? 'home' : 'onboarding' }
+            : prev,
+        );
+      })
+      .catch(() => {
+        clearAuth();
+        setCurrentUser(null);
+      })
+      .finally(() => setAuthChecked(true));
+  }, []);
 
   const navigate = (next: Screen) => {
     // 탭 화면은 서로 형제 관계라 뒤로가기 부담이 쌓이면 안 되므로 히스토리를 비운다.
@@ -69,12 +124,21 @@ export function App() {
     headerReview?.bookId ?? '',
   );
 
-  if (!authed) {
+  if (!authChecked) {
+    return <div className="empty-state">불러오는 중이에요</div>;
+  }
+
+  if (!currentUser) {
     if (screen.name === 'signup') {
       return (
         <SignupPage
-          onSignupComplete={() => {
-            setAuthed(true);
+          onSignupComplete={async (input: SignupInput) => {
+            await apiFetch('/api/auth/signup', { method: 'POST', body: JSON.stringify(input) });
+            const result = await apiFetch<LoginResponse>('/api/auth/login', {
+              method: 'POST',
+              body: JSON.stringify({ email: input.email, password: input.password }),
+            });
+            applyLogin(result);
             setScreen({ name: 'onboarding' });
           }}
           onBack={() => setScreen({ name: 'login' })}
@@ -83,8 +147,12 @@ export function App() {
     }
     return (
       <LoginPage
-        onLogin={() => {
-          setAuthed(true);
+        onLogin={async (email, password) => {
+          const result = await apiFetch<LoginResponse>('/api/auth/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password }),
+          });
+          applyLogin(result);
           setScreen(onboardingComplete ? { name: 'home' } : { name: 'onboarding' });
         }}
         onGoSignup={() => setScreen({ name: 'signup' })}
@@ -94,13 +162,15 @@ export function App() {
 
   if (!onboardingComplete) {
     return (
-      <OnboardingPage
-        onComplete={() => {
-          localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
-          setOnboardingComplete(true);
-          setScreen({ name: 'home' });
-        }}
-      />
+      <UserProfileProvider>
+        <OnboardingPage
+          onComplete={() => {
+            localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+            setOnboardingComplete(true);
+            setScreen({ name: 'home' });
+          }}
+        />
+      </UserProfileProvider>
     );
   }
 
@@ -168,6 +238,7 @@ export function App() {
   }
 
   return (
+    <UserProfileProvider>
     <Shell
       title={title}
       onBack={onBack}
@@ -234,5 +305,6 @@ export function App() {
         />
       )}
     </Shell>
+    </UserProfileProvider>
   );
 }
