@@ -21,8 +21,15 @@
   color: var(--color-text-secondary);
 }
 
+.mypage__section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-md) 0 var(--space-sm);
+}
+
 .mypage__section-title {
   font-size: 15px;
   font-weight: 600;
-  margin: var(--space-md) 0 var(--space-sm);
+  margin: 0;
 }
