@@ -4,9 +4,10 @@ recommend(user_id: str, k: int = 10) -> list[str] 형태의 모델을 Recall@K /
 (K=5,10,20)로 평가한다. Relevance는 0~3 graded + null(평가 제외)이며, Recall@K는
 relevance>0을 relevant로 간주해 계산한다.
 
-데이터 스키마(eval_users.json/eval_relevance.json)는 실제 파일이 아직 없어 아래
-load_* 함수에 임시로 가정한 형식을 반영해 두었다 — 팀 내 확인 후 형식이 다르면
-이 로더 함수들만 수정하면 되고, 나머지 평가 로직에는 영향이 없다.
+eval_users.json/eval_relevance.json 스키마는 팀 확인을 거친 실제 형식(camelCase,
+book 식별자는 isbn)을 따른다 — 자세한 필드 매핑은 load_eval_users/load_eval_relevance
+docstring 참고.
+
 """
 
 from __future__ import annotations
@@ -39,8 +40,9 @@ DEFAULT_EVAL_RELEVANCE_PATH = EVAL_DATA_DIR / "eval_relevance.json"
 
 @dataclass(frozen=True)
 class RelevanceLabel:
-    relevance: int | None  # 0~3, None = 평가 제외
+    relevance: int | None  # 0~3, None = 평가 제외("모르겠음")
     has_read: bool
+    label_source: str | None = None  # "aspect_card" | "read" — hasRead와 1:1 대응 아님, 독립 저장
 
 
 @dataclass(frozen=True)
@@ -86,12 +88,16 @@ def load_interactions(path: str | Path = DEFAULT_INTERACTIONS_PATH) -> list[dict
 
 
 def load_eval_users(path: str | Path = DEFAULT_EVAL_USERS_PATH) -> dict[str, EvalUser]:
-    """user_id -> EvalUser 매핑. (형식 가정: user_id/preferredEmotions/avoidedTraits 필드를 가진 리스트)"""
+    """user_id -> EvalUser 매핑.
+
+    실제 eval_users.json은 camelCase 필드(userId/preferredEmotions/avoidedTraits)를
+    쓰는 레코드 리스트다. userId만 내부 명명 규칙에 맞춰 user_id로 옮겨 담는다.
+    """
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     return {
-        item["user_id"]: EvalUser(
-            user_id=item["user_id"],
+        item["userId"]: EvalUser(
+            user_id=item["userId"],
             preferred_emotions=item.get("preferredEmotions", []),
             avoided_traits=item.get("avoidedTraits", []),
         )
@@ -103,14 +109,20 @@ def load_eval_relevance(
     path: str | Path = DEFAULT_EVAL_RELEVANCE_PATH,
 ) -> dict[str, dict[str, RelevanceLabel]]:
     """user_id -> {book_id: RelevanceLabel} 중첩 매핑으로 로드.
-    (형식 가정: user_id/book_id/relevance/hasRead 필드를 가진 flat 레코드 리스트)"""
+
+    실제 eval_relevance.json은 camelCase 필드(userId/isbn/relevance/hasRead/labelSource)를
+    쓰는 flat 레코드 리스트다. 책 식별자가 book_id가 아니라 isbn으로 되어 있는데,
+    이 프로젝트에서는 isbn을 book_id와 동일한 값 체계로 그대로 사용한다고 가정하고
+    로딩 시점에만 isbn -> book_id로 매핑한다(내부 데이터클래스/로직은 전부 book_id로 통일).
+    """
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     result: dict[str, dict[str, RelevanceLabel]] = defaultdict(dict)
     for item in raw:
-        result[item["user_id"]][item["book_id"]] = RelevanceLabel(
+        result[item["userId"]][item["isbn"]] = RelevanceLabel(
             relevance=item.get("relevance"),
             has_read=bool(item.get("hasRead", False)),
+            label_source=item.get("labelSource"),
         )
     return dict(result)
 
@@ -301,6 +313,63 @@ def evaluate_model(
     )
 
 
+def _filter_relevance_map_by_label_source(
+    relevance_for_user: dict[str, RelevanceLabel],
+    label_source_filter: str | None,
+    book_ids: list[str] | None,
+) -> dict[str, int]:
+    allowed = set(book_ids) if book_ids is not None else None
+    return {
+        bid: label.relevance
+        for bid, label in relevance_for_user.items()
+        if label.relevance is not None
+        and (allowed is None or bid in allowed)
+        and (label_source_filter is None or label.label_source == label_source_filter)
+    }
+
+
+def summarize_by_label_source(
+    recommend_fn: RecommendFn,
+    eval_users: dict[str, EvalUser],
+    eval_relevance: dict[str, dict[str, RelevanceLabel]],
+    config: EvalConfig,
+    label_sources: tuple[str, ...] = ("aspect_card", "read"),
+    exclude_known: dict[str, set[str]] | None = None,
+) -> dict[str, dict[int, dict[str, float]]]:
+    """labelSource("aspect_card"/"read") 기준으로 recall/ndcg를 별도 축으로 집계한다.
+
+    evaluate_model의 hasRead 기반 분리(overall/has_read_true/has_read_false)와는 독립적인
+    축이다 — hasRead와 labelSource가 1:1로 대응하지 않기 때문에(예: 안 읽었지만
+    aspect_card로 평가한 경우가 기본), 라벨 신뢰도를 다른 관점에서 따로 확인하기 위한 함수다.
+    evaluate_model과 별도로 recommend_fn을 다시 호출한다(결과 캐싱/재사용 없음).
+    exclude_known 의미는 evaluate_model과 동일하다.
+    """
+    max_k = max(config.ks)
+    per_source_results: dict[str, list[UserEvalResult]] = {source: [] for source in label_sources}
+
+    for user_id in eval_users:
+        relevance_for_user = eval_relevance.get(user_id)
+        if not relevance_for_user:
+            continue
+
+        recommended = recommend_fn(user_id, max_k)
+
+        if config.book_ids is not None:
+            allowed = set(config.book_ids)
+            recommended = [b for b in recommended if b in allowed]
+        if exclude_known is not None:
+            known_ids = exclude_known.get(user_id, set())
+            recommended = [b for b in recommended if b not in known_ids]
+
+        for source in label_sources:
+            relevance_map = _filter_relevance_map_by_label_source(relevance_for_user, source, config.book_ids)
+            result = _evaluate_user_subset(user_id, recommended, relevance_map, config.ks)
+            if result is not None:
+                per_source_results[source].append(result)
+
+    return {source: _aggregate(results, config.ks) for source, results in per_source_results.items()}
+
+
 # ── 6. 리포트 ──────────────────────────────────────────────────
 
 _SUBSET_LABELS: dict[Subset, str] = {
@@ -480,19 +549,19 @@ if __name__ == "__main__":
 
     synthetic_relevance: dict[str, dict[str, RelevanceLabel]] = {
         "u001": {
-            "b001": RelevanceLabel(relevance=3, has_read=True),
-            "b002": RelevanceLabel(relevance=2, has_read=True),
-            "b005": RelevanceLabel(relevance=1, has_read=False),
-            "b010": RelevanceLabel(relevance=0, has_read=False),
+            "b001": RelevanceLabel(relevance=3, has_read=True, label_source="read"),
+            "b002": RelevanceLabel(relevance=2, has_read=True, label_source="read"),
+            "b005": RelevanceLabel(relevance=1, has_read=False, label_source="aspect_card"),
+            "b010": RelevanceLabel(relevance=0, has_read=False, label_source="aspect_card"),
         },
         "u002": {
-            "b003": RelevanceLabel(relevance=3, has_read=False),
-            "b004": RelevanceLabel(relevance=2, has_read=False),
+            "b003": RelevanceLabel(relevance=3, has_read=False, label_source="aspect_card"),
+            "b004": RelevanceLabel(relevance=2, has_read=False, label_source="aspect_card"),
         },
         "u003": {
-            "b006": RelevanceLabel(relevance=3, has_read=True),
-            "b007": RelevanceLabel(relevance=1, has_read=True),
-            "b008": RelevanceLabel(relevance=None, has_read=False),
+            "b006": RelevanceLabel(relevance=3, has_read=True, label_source="read"),
+            "b007": RelevanceLabel(relevance=1, has_read=True, label_source="aspect_card"),
+            "b008": RelevanceLabel(relevance=None, has_read=False, label_source="aspect_card"),
         },
     }
 
@@ -553,3 +622,14 @@ if __name__ == "__main__":
     ]
     approx_ndcg_at_5 = simulate_random_ndcg_at_k(N, ndcg_relevance_maps, k=5, n_trials=500, seed=config.seed)
     print(f"  E[NDCG@5] (근사, n_trials=500) = {approx_ndcg_at_5:.4f}")
+
+    print("\n>>> 5. labelSource(aspect_card/read) 기준 별도 축 집계")
+    by_source = summarize_by_label_source(baseline_fn, synthetic_users, synthetic_relevance, config)
+    for source, per_k in by_source.items():
+        print(f"  [{source}]")
+        for k in config.ks:
+            stats = per_k[k]
+            print(
+                f"    k={k:<3} Recall@{k}={stats['recall']:.4f}  "
+                f"NDCG@{k}={stats['ndcg']:.4f}  (n_users={stats['n_users']})"
+            )
