@@ -12,6 +12,7 @@ data/raw/*
 !data/processed/final_book_list_88.csv
 !data/processed/books_naver.jsonl
 !data/processed/llm_reviews.jsonl
+!data/processed/structured_reviews.jsonl
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
