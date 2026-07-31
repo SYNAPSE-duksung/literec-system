@@ -159,7 +159,8 @@ if __name__ == "__main__":
 
     embeddings_path = Path(__file__).parent / "mock_data" / "embeddings.npz"
     book_ids, review_ids, sentences, embeddings = load_embeddings(embeddings_path)
-    cluster_result = global_cluster(review_ids, book_ids, embeddings, min_cluster_size=3, min_samples=2)
+    # 데모용 n_clusters=6: mock 데이터(45개 리뷰)에는 기본값 30이 너무 크다 (clustering.py 참고)
+    cluster_result = global_cluster(review_ids, book_ids, embeddings, n_clusters=6)
     book_identities = compute_book_identities(cluster_result)
 
     reviews_path = Path(__file__).parent / "mock_data" / "reviews.json"
@@ -176,30 +177,26 @@ if __name__ == "__main__":
     for book_id, identity in sorted(book_identities.items()):
         print(f"  {book_id} {title_map[book_id]}: 결 {len(identity.cluster_vectors)}개, 리뷰 수 {review_counts[book_id]}")
 
-    # 콜드스타트로 보강한 벡터 리스트 생성 (책마다 리뷰 기반 결 + 콜드스타트 결 1개)
-    augmented_vectors: dict[str, list[np.ndarray]] = {}
-    for book_id, identity in book_identities.items():
-        augmented_vectors[book_id] = augment_with_coldstart(
-            identity.vectors(), summary_map[book_id], review_counts[book_id]
-        )
-
     users_path = Path(__file__).parent / "mock_data" / "user_profiles.json"
     with open(users_path, encoding="utf-8") as f:
         users = json.load(f)
     profiles = build_user_profiles(users)
 
-    print("\n=== b004(리뷰 9개지만 전부 노이즈 처리되어 결 0개)의 콜드스타트 전/후 비교 ===")
-    target = "b004"
-    for user in users:
-        profile = profiles[user["userId"]]
-        before_pref = cosine_max_sim(profile.preferred_vector, book_identities[target].vectors())
-        after_pref = cosine_max_sim(profile.preferred_vector, augmented_vectors[target])
-        print(f"  {user['userId']}: 콜드스타트 전 선호유사도={before_pref:.4f} -> 후={after_pref:.4f}")
+    target = "b001"
+    print(f"\n=== 콜드스타트 슬라이딩 효과: {target} {title_map[target]}의 콜드스타트 벡터 자체만")
+    print("    리뷰 수를 다르게 가정했을 때 u001과의 유사도 비교 (다른 결과 섞지 않음) ===")
+    profile = profiles["u001"]
+    for assumed_count in [0, 1, review_counts[target], 30]:
+        facet = coldstart_facet(summary_map[target], assumed_count)
+        sim = cosine_max_sim(profile.preferred_vector, [facet])  # weight가 그대로 곱해진 유사도
+        tag = " (실제 리뷰 수)" if assumed_count == review_counts[target] else ""
+        print(f"  가정한 리뷰 수={assumed_count:>3}{tag} (weight={coldstart_weight(assumed_count):.3f}) -> 콜드스타트 벡터 유사도={sim:.4f}")
 
-    print(f"\n(참고: {target} {title_map[target]}는 리뷰가 9개로 threshold(5)보다 많지만,")
-    print(" HDBSCAN이 전부 노이즈로 분류해 결이 0개였던 케이스 - 콜드스타트는 review_count")
-    print(" 기준으로만 동작하므로 '이유를 막론하고 결이 없는 책'에도 그대로 적용된다.")
-    print(f" review_count=9, k=5 -> weight={coldstart_weight(9):.3f}로 낮은 신뢰도로 반영됨)")
+    print(
+        "\n(참고: matching.py의 실제 사용에서는 이 벡터가 책의 다른 결과 함께 max로 "
+        "비교되므로, 이미 충분히 매칭되는 실제 결이 있으면 weight가 낮은 콜드스타트 "
+        "벡터가 최댓값으로 안 뽑힐 수 있다 - 이건 의도된 동작이다.)"
+    )
 
     print()
     print("=" * 60)

@@ -185,7 +185,8 @@ if __name__ == "__main__":
 
     embeddings_path = Path(__file__).parent / "mock_data" / "embeddings.npz"
     book_ids, review_ids, sentences, embeddings = load_embeddings(embeddings_path)
-    cluster_result = global_cluster(review_ids, book_ids, embeddings, min_cluster_size=3, min_samples=2)
+    # 데모용 n_clusters=6: mock 데이터(45개 리뷰)에는 기본값 30이 너무 크다 (clustering.py 참고)
+    cluster_result = global_cluster(review_ids, book_ids, embeddings, n_clusters=6)
     book_identities = compute_book_identities(cluster_result)
     review_embeddings = build_review_embedding_index(review_ids, embeddings)
 
