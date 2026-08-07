@@ -54,6 +54,18 @@ export function App() {
     setCurrentUser(result.user);
   };
 
+  const handleLogout = async () => {
+    try {
+      await apiFetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // 서버 요청이 실패해도 클라이언트 쪽 세션은 정리한다.
+    }
+    clearAuth();
+    setCurrentUser(null);
+    setHistory([]);
+    setScreen({ name: 'login' });
+  };
+
   // 401이 refresh로도 복구되지 않으면(리프레시 쿠키 만료 등) 로그인 화면으로 되돌린다.
   useEffect(() => {
     registerAuthExpiredHandler(() => {
@@ -269,9 +281,11 @@ export function App() {
 
       {screen.name === 'mypage' && (
         <MyPage
+          accountId={currentUser.email ?? currentUser.name}
           onSelectBook={(bookId) => navigate({ name: 'bookDetail', bookId })}
           onSelectReview={(reviewId) => navigate({ name: 'reviewDetail', reviewId })}
           onViewAll={(listType) => navigate({ name: 'myList', listType })}
+          onLogout={handleLogout}
         />
       )}
 

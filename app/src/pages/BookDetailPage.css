@@ -60,6 +60,17 @@
   margin-bottom: var(--space-md);
 }
 
+.book-detail-page__synopsis-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
 .book-detail-page__radar-card {
   margin-bottom: var(--space-md);
 }

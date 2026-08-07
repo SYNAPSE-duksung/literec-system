@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useBook } from '../hooks/useBook';
 import { useReviewsByBook } from '../hooks/useReviewsByBook';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -16,10 +17,17 @@ interface BookDetailPageProps {
   onWriteReview: (bookId: string) => void;
 }
 
+const SYNOPSIS_PREVIEW_LIMIT = 150;
+
 export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDetailPageProps) {
   const { data: book, isLoading } = useBook(bookId);
   const { data: reviews, isLoading: reviewsLoading } = useReviewsByBook(bookId);
   const { data: profile, dislikedBookIds, setBookReaction } = useUserProfile();
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+
+  useEffect(() => {
+    setSynopsisExpanded(false);
+  }, [bookId]);
 
   if (isLoading || !book) {
     return <div className="book-detail-page empty-state">불러오는 중이에요</div>;
@@ -27,6 +35,11 @@ export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDe
 
   const liked = profile?.likedBookIds.includes(book.id) ?? false;
   const disliked = dislikedBookIds.includes(book.id);
+  const synopsisTruncatable = book.synopsis.length > SYNOPSIS_PREVIEW_LIMIT;
+  const displayedSynopsis =
+    synopsisTruncatable && !synopsisExpanded
+      ? `${book.synopsis.slice(0, SYNOPSIS_PREVIEW_LIMIT)}…`
+      : book.synopsis;
 
   return (
     <div className="book-detail-page">
@@ -70,7 +83,18 @@ export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDe
         </Button>
       </div>
 
-      <p className="book-detail-page__synopsis">{book.synopsis}</p>
+      <p className="book-detail-page__synopsis">
+        {displayedSynopsis}
+        {synopsisTruncatable && (
+          <button
+            type="button"
+            className="book-detail-page__synopsis-toggle"
+            onClick={() => setSynopsisExpanded((prev) => !prev)}
+          >
+            {synopsisExpanded ? ' 접기' : ' 더보기'}
+          </button>
+        )}
+      </p>
 
       <Card className="book-detail-page__radar-card">
         <p className="book-detail-page__section-title">이 책의 결</p>

@@ -9,16 +9,74 @@
   margin-bottom: var(--space-lg);
 }
 
+.mypage__profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .mypage__name {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
 }
 
+.mypage__account-id {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.mypage__preferences-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
 .mypage__preferences {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 13px;
   color: var(--color-text-secondary);
+}
+
+.mypage__preferences-edit-btn {
+  flex-shrink: 0;
+}
+
+.mypage__logout-btn {
+  flex-shrink: 0;
+}
+
+.mypage__emotions-editor {
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+}
+
+.mypage__emotions-editor-title {
+  margin: 0 0 var(--space-sm);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mypage__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--space-sm);
+}
+
+.mypage__emotions-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.mypage__emotions-save-btn {
+  width: auto;
+  padding: 8px 16px;
 }
 
 .mypage__section-header {
