@@ -272,6 +272,7 @@ sketch
 [Ll]ib64
 [Ll]ocal
 [Ss]cripts
+!backend/scripts/
 pyvenv.cfg
 pip-selfcheck.json
 
