@@ -1,0 +1,16 @@
+.home-page {
+  padding: var(--space-sm);
+}
+
+.home-page__eyebrow {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.home-page__heading {
+  margin: 4px 0 var(--space-md);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.4;
+}

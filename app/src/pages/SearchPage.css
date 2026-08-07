@@ -1,0 +1,7 @@
+.search-page {
+  padding: var(--space-sm);
+}
+
+.search-page__list {
+  margin-top: var(--space-md);
+}

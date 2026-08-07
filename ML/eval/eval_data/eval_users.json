@@ -1,0 +1,50 @@
+[
+  {
+    "userId": "김지은",
+    "preferredEmotions": [
+      "잔잔함",
+      "담백함"
+    ],
+    "avoidedTraits": [
+      "잔인한 묘사"
+    ]
+  },
+  {
+    "userId": "이지원",
+    "preferredEmotions": [
+      "먹먹함",
+      "설렘",
+      "긴장감"
+    ],
+    "avoidedTraits": [
+      "잔인한 묘사",
+      "장황한 문체"
+    ]
+  },
+  {
+    "userId": "김유진",
+    "preferredEmotions": [
+      "그리움",
+      "먹먹함",
+      "설렘",
+      "긴장감"
+    ],
+    "avoidedTraits": [
+      "느린 전개",
+      "장황한 문체"
+    ]
+  },
+  {
+    "userId": "신연주",
+    "preferredEmotions": [
+      "잔잔함",
+      "위로",
+      "담백함",
+      "설렘"
+    ],
+    "avoidedTraits": [
+      "신파(감정 과잉, 억지 감동, 뻔한 눈물 유도)",
+      "느린 전개"
+    ]
+  }
+]
