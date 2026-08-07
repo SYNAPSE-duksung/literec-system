@@ -15,14 +15,12 @@
 한 번만 로드한다(`_user_profiles_cache`). `recommend()` 호출마다 새로 하는
 일은 "이미 계산된 카탈로그에서 이 유저 벡터와 매칭 점수 계산"뿐이다.
 
-## 유저 프로필 소스 (임시)
+## 유저 프로필 소스
 
-DESIGN.md가 참고하라고 한 `ML/eval/eval_data/eval_users.json`이 아직 팀원
-쪽에도 존재하지 않는다 (`ML/eval/evaluation.py`도 자체 테스트를 synthetic
-데이터로 돌리는 상태). 그래서 지금은 `DEFAULT_USER_RECORDS_PATH`를
-`mock_data/user_profiles.json`으로 잡아둔다 - 실제 eval_users.json이 생기면
-이 상수 하나만 바꾸면 된다(스키마가 `userId/preferredEmotions/avoidedTraits`로
-이미 동일하다는 것을 evaluation.py의 load_eval_users()에서 확인함).
+팀원 4명이 구글폼으로 응답한 실제 `ML/eval/eval_data/eval_users.json`을 쓴다
+(스키마가 `userId/preferredEmotions/avoidedTraits`로 evaluation.py의
+load_eval_users()가 기대하는 것과 동일). mock_data/user_profiles.json은
+Phase 3~6 단위 테스트/데모용으로 남겨두고, 최종 조립에서는 더 이상 안 쓴다.
 """
 
 from __future__ import annotations
@@ -43,7 +41,9 @@ from user_profile import UserProfileVectors, build_user_profiles
 
 DATA_PROCESSED_DIR = Path(__file__).parent.parent.parent / "data" / "processed"
 STRUCTURED_REVIEWS_PATH = DATA_PROCESSED_DIR / "structured_reviews.jsonl"
-DEFAULT_USER_RECORDS_PATH = Path(__file__).parent / "mock_data" / "user_profiles.json"
+DEFAULT_USER_RECORDS_PATH = (
+    Path(__file__).parent.parent / "eval" / "eval_data" / "eval_users.json"
+)
 
 _catalog_cache: dict[str, list[np.ndarray]] | None = None
 _user_profiles_cache: dict[str, UserProfileVectors] | None = None
