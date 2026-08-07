@@ -1,0 +1,26 @@
+.board-page {
+  padding: var(--space-sm);
+}
+
+.board-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
+.board-page__title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.board-page__write-btn {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.board-page__list {
+  margin-top: var(--space-md);
+}

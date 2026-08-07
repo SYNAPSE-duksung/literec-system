@@ -1,0 +1,36 @@
+.btn {
+  width: 100%;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-button);
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.btn--secondary {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  border-color: var(--color-border);
+}
+
+.btn--text {
+  width: auto;
+  background: transparent;
+  color: var(--color-text-secondary);
+  padding: 0;
+  font-size: 13px;
+  font-weight: 400;
+  text-decoration: underline;
+}

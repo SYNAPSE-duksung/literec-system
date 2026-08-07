@@ -1,0 +1,33 @@
+.onboarding-page {
+  padding: var(--space-md) var(--space-sm);
+}
+
+.onboarding-page__progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--space-lg);
+}
+
+.onboarding-page__bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--color-border);
+}
+
+.onboarding-page__bar--filled {
+  background: var(--color-primary);
+}
+
+.onboarding-page__title {
+  font-size: 19px;
+  font-weight: 600;
+  margin: 0 0 var(--space-md);
+}
+
+.onboarding-page__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--space-lg);
+}

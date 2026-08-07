@@ -1,0 +1,45 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-primary);
+  font-family: var(--font-family);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea {
+  font-family: inherit;
+}
+
+.app-shell {
+  max-width: var(--container-max-width);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--color-background);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.app-shell__content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: var(--space-lg);
+}
+
+.empty-state {
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: var(--space-md) 0;
+  font-size: 14px;
+}

@@ -1,0 +1,21 @@
+:root {
+  --color-primary: #1a1a1a;
+  --color-background: #fafaf8;
+  --color-accent: #3d5a80;
+  --color-border: #e5e5e0;
+  --color-surface: #ffffff;
+  --color-text-secondary: #767671;
+  --color-danger: #c1483d;
+
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+
+  --radius-card: 12px;
+  --radius-button: 8px;
+
+  --font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  --container-max-width: 390px;
+}
