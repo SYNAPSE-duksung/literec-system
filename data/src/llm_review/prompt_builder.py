@@ -197,6 +197,64 @@ LLM 특유의 '**'같은 볼드체와 마크다운 형식을 쓰지 말고 그�
 """
 
 
+STRUCTURE_PROMPT_TEMPLATE = """아래는 같은 책 한 권에 대한 리뷰 {count}개(원문)이다. 각 리뷰를
+5개 축으로 구조화해줘.
+
+[리뷰 목록]
+{reviews_block}
+
+[5축 정의]
+- 정서_경험: 읽고 난 후 느낀 감정 (예: 쓸쓸함, 위로받음, 먹먹함). 명시적인 감정 단어뿐
+  아니라 암묵적으로 드러나는 반응(예: "당황했다", "온몸으로 느꼈다", "머리가 무거워졌다")도
+  놓치지 말고 잡아낼 것.
+- 좋았던_요소: 문체, 구성, 결말 등 형식적/스타일적 호평
+- 별로였던_요소: 아쉬웠던 형식적/스타일적 요소
+- 소재_및_주제: 줄거리·소재 자체에 대한 반응
+- 독서_경험_맥락: 몰입도, 재독 여부 등 선택적 부가 정보
+
+[작업 방식]
+1. 각 리뷰의 content를 읽고, 각 축에 실제로 언급된 내용(명시적 표현뿐 아니라 암묵적으로
+   드러나는 반응까지 포함)이 있으면 리뷰어의 표현을 살리되 1~2문장으로 간결하게 요약/추출해서
+   채운다. 원문을 그대로 길게 복사하지 말 것.
+2. 리뷰에 해당 축 내용이 전혀 없으면 억지로 채우지 말고 null로 둔다.
+3. sentiment(라벨)는 여기서 다루지 않는다 — 절대 새로 판단하거나 출력하지 말 것 (호출부가
+   원본 값을 그대로 사용한다).
+
+출력 형식:
+아래 JSON 형식으로만 출력할 것. 다른 설명, 마크다운, 코드블록 표시 없이 JSON 객체 하나만 출력.
+{{
+  "reviews": [
+    {{
+      "review_index": (원본 review_index 정수 그대로),
+      "정서_경험": "..." 또는 null,
+      "좋았던_요소": "..." 또는 null,
+      "별로였던_요소": "..." 또는 null,
+      "소재_및_주제": "..." 또는 null,
+      "독서_경험_맥락": "..." 또는 null
+    }},
+    ... 입력 순서·review_index 그대로 유지하며 총 {count}개
+  ]
+}}
+"""
+
+
+def format_reviews_block(reviews: list[dict]) -> str:
+    blocks = []
+    for review in reviews:
+        blocks.append(
+            f"--- 리뷰 {review['review_index']} (sentiment: {review['sentiment']}) ---\n"
+            f"{review['content']}"
+        )
+    return "\n\n".join(blocks)
+
+
+def build_structure_prompt(reviews: list[dict]) -> str:
+    return STRUCTURE_PROMPT_TEMPLATE.format(
+        count=len(reviews),
+        reviews_block=format_reviews_block(reviews),
+    )
+
+
 def describe_content_issues(content: str, min_length: int, max_length: int) -> str:
     length = len(content)
     issues = []
