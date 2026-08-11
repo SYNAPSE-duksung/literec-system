@@ -2,7 +2,10 @@
 
 recommend(user_id: str, k: int = 10) -> list[str] 형태의 모델을 Recall@K / NDCG@K
 (K=5,10,20)로 평가한다. Relevance는 0~3 graded + null(평가 제외)이며, Recall@K는
-relevance>0을 relevant로 간주해 계산한다.
+relevance >= EvalConfig.relevant_threshold(기본값 2, 팀 논의로 확정 - 기존
+relevance>0 기준은 pilot 데이터에서 너무 후해 Recall이 무작위 추천과 잘 안
+갈렸음)를 relevant로 간주해 계산한다. NDCG는 이 임계값과 무관하게 항상 등급을
+그대로 쓴다.
 
 eval_users.json/eval_relevance.json 스키마는 팀 확인을 거친 실제 형식(camelCase,
 book 식별자는 isbn)을 따른다 — 자세한 필드 매핑은 load_eval_users/load_eval_relevance
@@ -58,6 +61,13 @@ class EvalConfig:
     book_ids: list[str] | None = None  # None이면 전체 카탈로그, 리스트면 파일럿처럼 후보 제한
     phase: Literal["pilot", "production"] = "pilot"
     seed: int = 42
+    # Recall 계산 시 "relevant"로 인정하는 최소 relevance 점수. 원래 기본값 1
+    # (relevance>0)로 실험했을 때, relevance 분포가 후한 pilot 데이터에서는 대부분의
+    # 책이 relevant로 잡혀 Recall이 무작위 추천과 거의 구분되지 않는 문제가 있었다
+    # (실험 근거: ML/eval/analyze_recall_thresholds.py). 팀 논의 후 relevance>=2를
+    # 기본값으로 확정 - NDCG는 이 값과 무관하게 항상 0~3 등급을 그대로 가중치로 써서
+    # 영향받지 않는다.
+    relevant_threshold: int = 2
 
 
 @dataclass
@@ -231,8 +241,9 @@ def _evaluate_user_subset(
     recommended: list[str],
     relevance_map: dict[str, int],
     ks: tuple[int, ...],
+    relevant_threshold: int = 2,
 ) -> UserEvalResult | None:
-    relevant_ids = {bid for bid, rel in relevance_map.items() if rel > 0}
+    relevant_ids = {bid for bid, rel in relevance_map.items() if rel >= relevant_threshold}
     if not relevant_ids:
         return None
     recall = {k: recall_at_k(recommended, relevant_ids, k) for k in ks}
@@ -295,7 +306,9 @@ def evaluate_model(
             ("has_read_false", False),
         ):
             relevance_map = _filter_relevance_map(relevance_for_user, has_read_filter, config.book_ids)
-            result = _evaluate_user_subset(user_id, recommended, relevance_map, config.ks)
+            result = _evaluate_user_subset(
+                user_id, recommended, relevance_map, config.ks, config.relevant_threshold
+            )
             if result is not None:
                 subset_results[subset].append(result)
 
@@ -363,7 +376,9 @@ def summarize_by_label_source(
 
         for source in label_sources:
             relevance_map = _filter_relevance_map_by_label_source(relevance_for_user, source, config.book_ids)
-            result = _evaluate_user_subset(user_id, recommended, relevance_map, config.ks)
+            result = _evaluate_user_subset(
+                user_id, recommended, relevance_map, config.ks, config.relevant_threshold
+            )
             if result is not None:
                 per_source_results[source].append(result)
 
