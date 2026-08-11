@@ -7,6 +7,7 @@ relevance>0 기준은 pilot 데이터에서 너무 후해 Recall이 무작위 �
 갈렸음)를 relevant로 간주해 계산한다. NDCG는 이 임계값과 무관하게 항상 등급을
 그대로 쓴다.
 
+
 eval_users.json/eval_relevance.json 스키마는 팀 확인을 거친 실제 형식(camelCase,
 book 식별자는 isbn)을 따른다 — 자세한 필드 매핑은 load_eval_users/load_eval_relevance
 docstring 참고.
@@ -61,6 +62,7 @@ class EvalConfig:
     book_ids: list[str] | None = None  # None이면 전체 카탈로그, 리스트면 파일럿처럼 후보 제한
     phase: Literal["pilot", "production"] = "pilot"
     seed: int = 42
+
         # Recall 계산 시 "relevant"로 인정하는 최소 relevance 점수. 원래 기본값 1
     # (relevance>0)로 실험했을 때, relevance 분포가 후한 pilot 데이터에서는 대부분의
     # 책이 relevant로 잡혀 Recall이 무작위 추천과 거의 구분되지 않는 문제가 있었다
@@ -68,6 +70,7 @@ class EvalConfig:
     # 기본값으로 확정 - NDCG는 이 값과 무관하게 항상 0~3 등급을 그대로 가중치로 써서
     # 영향받지 않는다.
     relevant_threshold: int = 2
+
 
 
 @dataclass
@@ -244,6 +247,7 @@ def _evaluate_user_subset(
     relevant_threshold: int = 2,
 ) -> UserEvalResult | None:
     relevant_ids = {bid for bid, rel in relevance_map.items() if rel >= relevant_threshold}
+
     if not relevant_ids:
         return None
     recall = {k: recall_at_k(recommended, relevant_ids, k) for k in ks}
@@ -654,3 +658,4 @@ if __name__ == "__main__":
                 f"    k={k:<3} Recall@{k}={stats['recall']:.4f}  "
                 f"NDCG@{k}={stats['ndcg']:.4f}  (n_users={stats['n_users']})"
             )
+
