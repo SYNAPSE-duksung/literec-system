@@ -34,10 +34,41 @@
   gap: 6px;
 }
 
+.book-detail-page__reactions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+
+.book-detail-page__reactions .btn {
+  width: auto;
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.book-detail-page__reaction--active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary) !important;
+}
+
 .book-detail-page__synopsis {
   font-size: 14px;
   line-height: 1.6;
   margin-bottom: var(--space-md);
+}
+
+.book-detail-page__synopsis-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
 }
 
 .book-detail-page__radar-card {

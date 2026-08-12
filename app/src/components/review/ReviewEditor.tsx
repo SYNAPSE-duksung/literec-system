@@ -19,23 +19,29 @@ export function ReviewEditor({ bookId, onCreated }: ReviewEditorProps) {
   const [liked, setLiked] = useState('');
   const [disliked, setDisliked] = useState('');
   const [content, setContent] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const toggleEmotion = (value: string) => {
     setEmotion((prev) => (prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value]));
   };
 
-  const canSubmit = content.trim().length > 0;
+  const canSubmit = content.trim().length > 0 && !submitting;
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canSubmit) return;
-    const review = createReview({
-      bookId,
-      content: content.trim(),
-      liked: liked.trim() ? [liked.trim()] : [],
-      disliked: disliked.trim() ? [disliked.trim()] : [],
-      emotion,
-    });
-    onCreated(review);
+    setSubmitting(true);
+    try {
+      const review = await createReview({
+        bookId,
+        content: content.trim(),
+        liked: liked.trim() ? [liked.trim()] : [],
+        disliked: disliked.trim() ? [disliked.trim()] : [],
+        emotion,
+      });
+      onCreated(review);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (

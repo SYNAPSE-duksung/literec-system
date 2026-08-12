@@ -1,7 +1,7 @@
 import type { Book, HookResult } from '../types';
-import { books } from '../mock/books';
-import { useAsyncMock } from './useAsyncMock';
+import { fetchBooks } from '../lib/bookCache';
+import { useAsyncApi } from './useAsyncApi';
 
 export function useBooks(): HookResult<Book[]> {
-  return useAsyncMock(() => books, []);
+  return useAsyncApi(() => fetchBooks(), [], []);
 }

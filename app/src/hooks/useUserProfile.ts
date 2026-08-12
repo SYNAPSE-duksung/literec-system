@@ -1,14 +1,14 @@
 import type { HookResult, UserProfile } from '../types';
-import { useMockStore } from '../state/MockStoreContext';
-import { useAsyncMock } from './useAsyncMock';
+import { useUserProfileContext } from '../state/UserProfileContext';
 
 export interface UseUserProfileResult extends HookResult<UserProfile | null> {
   updateProfile: (partial: Partial<UserProfile>) => void;
-  toggleLikedBook: (bookId: string) => void;
+  dislikedBookIds: string[];
+  setBookReaction: (bookId: string, reaction: 'like' | 'dislike' | null) => void;
 }
 
 export function useUserProfile(): UseUserProfileResult {
-  const { userProfile, updateUserProfile, toggleLikedBook } = useMockStore();
-  const result = useAsyncMock<UserProfile | null>(() => userProfile, [userProfile]);
-  return { ...result, updateProfile: updateUserProfile, toggleLikedBook };
+  const { data, isLoading, isError, dislikedBookIds, updateProfile, setBookReaction } =
+    useUserProfileContext();
+  return { data, isLoading, isError, dislikedBookIds, updateProfile, setBookReaction };
 }

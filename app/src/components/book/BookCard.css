@@ -4,21 +4,30 @@
   margin-bottom: var(--space-sm);
 }
 
-.book-card__like {
+.book-card__reactions {
   position: absolute;
   top: var(--space-xs);
   right: var(--space-xs);
+  display: flex;
+  gap: 2px;
+  z-index: 1;
+}
+
+.book-card__reaction {
   background: none;
   border: none;
   padding: 4px;
   cursor: pointer;
   color: var(--color-text-secondary);
   display: flex;
-  z-index: 1;
 }
 
-.book-card__like--active {
+.book-card__reaction--liked {
   color: var(--color-danger);
+}
+
+.book-card__reaction--disliked {
+  color: var(--color-primary);
 }
 
 .book-card__row {

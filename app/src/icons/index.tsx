@@ -38,6 +38,15 @@ export function HeartIcon({ filled, ...props }: IconProps & { filled?: boolean }
   );
 }
 
+export function ThumbsDownIcon({ filled, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base} fill={filled ? 'currentColor' : 'none'} {...props}>
+      <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3H10z" />
+      <path d="M17 2h4v11h-4" />
+    </svg>
+  );
+}
+
 export function HomeIcon(props: IconProps) {
   return (
     <svg {...base} {...props}>

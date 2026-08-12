@@ -1,12 +1,13 @@
-import { useState } from 'react';
 import { useReview } from '../hooks/useReview';
 import { useBook } from '../hooks/useBook';
 import { useSimilarReviewBooks } from '../hooks/useSimilarReviewBooks';
+import { useReviewReaction } from '../hooks/useReviewReaction';
 import { Avatar } from '../components/common/Avatar';
 import { Tag } from '../components/common/Tag';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { SimilarBookByReviewCard } from '../components/review/SimilarBookByReviewCard';
+import { HeartIcon, ThumbsDownIcon } from '../icons';
 import './ReviewDetailPage.css';
 
 interface ReviewDetailPageProps {
@@ -18,7 +19,7 @@ export function ReviewDetailPage({ reviewId, onSelectBook }: ReviewDetailPagePro
   const { data: review, isLoading } = useReview(reviewId);
   const { data: book } = useBook(review?.bookId ?? '');
   const { data: similarBooks, isLoading: similarLoading } = useSimilarReviewBooks(reviewId);
-  const [myReaction, setMyReaction] = useState<'like' | 'dislike' | null>(null);
+  const { myReaction, setReaction } = useReviewReaction(reviewId);
 
   if (isLoading || !review) {
     return <div className="review-detail-page empty-state">불러오는 중이에요</div>;
@@ -79,16 +80,18 @@ export function ReviewDetailPage({ reviewId, onSelectBook }: ReviewDetailPagePro
         <Button
           variant="secondary"
           className={myReaction === 'like' ? 'review-detail-page__reaction--active' : ''}
-          onClick={() => setMyReaction((prev) => (prev === 'like' ? null : 'like'))}
+          aria-pressed={myReaction === 'like'}
+          onClick={() => setReaction(myReaction === 'like' ? null : 'like')}
         >
-          좋아요 {likeCount}
+          <HeartIcon width={16} height={16} filled={myReaction === 'like'} /> 좋아요 {likeCount}
         </Button>
         <Button
           variant="secondary"
           className={myReaction === 'dislike' ? 'review-detail-page__reaction--active' : ''}
-          onClick={() => setMyReaction((prev) => (prev === 'dislike' ? null : 'dislike'))}
+          aria-pressed={myReaction === 'dislike'}
+          onClick={() => setReaction(myReaction === 'dislike' ? null : 'dislike')}
         >
-          싫어요
+          <ThumbsDownIcon width={16} height={16} filled={myReaction === 'dislike'} /> 싫어요
         </Button>
       </div>
 

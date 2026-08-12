@@ -207,3 +207,45 @@ onWriteReview: () => {
 | 11 | 리뷰 작성 버튼 라벨 불일치 | ⛔ 철회 — `UI_DESIGN_SPEC.md` 섹션 6.5/6.6이 의도적으로 다르게 지정, 스펙 준수를 위해 변경하지 않음 |
 | 12 | 홈 화면 추천 0개 시 빈 상태 없음 | ✅ 수정 |
 | 13 | 게시판/검색 autoFocus 차이 | (제외 — 사용자 지시) |
+
+---
+
+# 백엔드 착수 전 정합성 점검 (2026-07-23)
+
+`report/LiteRec_Backend_ClaudeCode_Brief.md`로 FastAPI 백엔드를 붙이기 전, 브리프 문서가 전제한 프론트 상태와 실제 코드를 대조했다.
+
+## 14. (구조적 문제) 브랜치 분기로 인해 `feat/UI-backend`에 실제 프론트 코드가 없었음
+
+`feat/UI-backend`(브리프/스펙 문서가 있는 브랜치)와 `feat/3-ui-code`/`develop`(실제 `app/src` 구현이 있는 브랜치)가 커밋 `8fb171b` 이후 서로의 조상이 아니게 갈라져 있었다. `origin/develop`은 이미 `feat/3-ui-code`를 병합해 두었으나(`feat: UI 백엔드 계획 수정` 이전), `feat/UI-backend`에는 반영되지 않은 상태였다.
+
+**상태**: 수정 완료. `develop`을 `origin/develop`로 fast-forward한 뒤 `feat/UI-backend`를 merge하고, 그 결과를 다시 `feat/UI-backend`로 merge(fast-forward)해 두 계열을 통합함. `report/UI_DESIGN_SPEC.md`(구 루트 `UI_DESIGN_SPEC.md`)가 `feat/3-ui-code` 쪽에서 이미 `report/`로 이동되어 있었고, `Book.publisher` 필드도 이미 반영돼 있어 해당 항목은 재작업 불필요.
+
+## 15. (스펙 문구) 리뷰 상세의 "좋아요: `liked===true`" 서술이 `Review.liked`(좋았던 점 텍스트 배열) 타입과 이름이 겹쳐 혼동 소지
+
+**상태**: 수정 완료. `UI_DESIGN_SPEC.md` 6.8을 `useReviewReaction(reviewId)` 훅 기반 서술로 교체하고, `Review.liked`와 무관한 별도 상태임을 명시. 코드 측에서도 `ReviewDetailPage`의 로컬 `useState` 반응을 `MockStoreContext`(`reviewReactions`) + 신규 `useReviewReaction` 훅으로 이전해 `CLAUDE.md`의 "컴포넌트는 데이터를 직접 만들지 않는다" 원칙에 맞춤.
+
+## 16. (기능 누락) bookDetail에 좋아요/싫어요 버튼이 없음 (브리프가 "기존 ❤️ 유지 + 👎 추가"라고 전제한 것과 불일치)
+
+**재현 확인**: `BookDetailPage.tsx`는 `BookCard`를 쓰지 않고 자체 레이아웃만 그려서 좋아요 액션이 없었고, `XAINote`의 하트 아이콘은 `filled` 고정값·`onClick` 없는 장식용이었다(다른 화면 `SimilarBookByReviewCard`에도 재사용되는 공용 컴포넌트라 그대로 둠).
+
+**상태**: 수정 완료. `MockStoreContext`에 `dislikedBookIds`/`setBookReaction`을 추가(`toggleLikedBook`도 내부적으로 재사용하도록 리팩터링해 좋아요↔싫어요 상호 배타를 전역에서 보장), `icons`에 `ThumbsDownIcon` 추가, `BookDetailPage`에 좋아요(❤️)/싫어요(👎) 토글 버튼 신규 추가(마이페이지 "좋아한 책" 목록과 동일한 `likedBookIds` 상태 공유). `UI_DESIGN_SPEC.md` 6.5/5.2에도 반영.
+
+**추가 수정 (같은 날)**: `BookCard`(홈/검색/마이페이지 공용)에도 하트 옆에 작은 `ThumbsDownIcon` 버튼을 추가해 어느 화면에서든 책 좋아요/싫어요를 남길 수 있게 함. 더 이상 쓰이지 않게 된 `toggleLikedBook`은 `setBookReaction`으로 완전히 대체하고 제거(같은 일을 하는 API 두 개를 남겨두지 않기 위함). 최초 붙인 `ThumbsDownIcon` path가 엉성해 손 모양이 아니라 이상하게 보이는 문제가 있어(사용자 스크린샷으로 발견), Feather 아이콘 스타일의 검증된 path로 교체.
+
+## 18. (기능 추가) 마이페이지 "좋아한 책"에 이어 "싫어요 표시한 책" 섹션 추가 + 3개 초과 시 "전체 보기"
+
+마이페이지가 좋아한 책 / 싫어요 표시한 책 / 내가 남긴 기록 세 목록을 모두 보여주게 되면서, 각 목록이 길어지면 화면이 지나치게 길어지는 문제가 있어 미리보기 개수를 제한해야 했다.
+
+**적용 규칙**: 세 섹션 모두 최대 3개까지만 미리보기로 보여주고, 실제 개수가 3개를 초과할 때만 "전체 보기" 링크를 노출한다(3개 이하면 링크 없음). "전체 보기" 클릭 시 같은 데이터를 같은 훅으로 그대로 재사용하되 개수 제한만 없앤 신규 화면(`screen.name: "myList"`, `listType: 'likedBooks' | 'dislikedBooks' | 'myReviews'`)으로 이동한다.
+
+**상태**: 수정 완료.
+- `types/screen.ts`에 `MyListType`/`{ name: 'myList'; listType }` 추가
+- `MyPage.tsx`: 싫어요 섹션 추가, 세 섹션 모두 `slice(0, 3)` 미리보기 + 조건부 "전체 보기" 버튼
+- 신규 `pages/MyListPage.tsx`: `listType`에 따라 좋아한 책/싫어요 책/내가 쓴 리뷰 전체를 필터링해 그대로 렌더링(마이페이지와 동일한 훅·필터 재사용, 별도 API 없음)
+- `App.tsx`: `myList` 화면 라우팅, 헤더 타이틀(좋아한 책/싫어요 표시한 책/내가 남긴 기록), 뒤로가기/홈 아이콘 배선
+- `UI_DESIGN_SPEC.md` 6.10 갱신 + 6.10.1 신규 섹션, 섹션 3 흐름도에 한 줄 추가
+- Playwright로 검증: 기본 상태(좋아요 2·싫어요 0·리뷰 3)에서는 "전체 보기" 없음 → 좋아요/싫어요를 4개로 늘리면 두 섹션에 "전체 보기"가 나타나고, 클릭 시 전체 목록·정확한 헤더 타이틀·뒤로가기로 마이페이지 복귀·홈 아이콘까지 정상 동작, 콘솔 에러 0건
+
+## 17. (백엔드 브리프 정정) 리뷰 좋아요 스키마가 UI(좋아요+싫어요 버튼)와 불일치
+
+`report/LiteRec_Backend_ClaudeCode_Brief.md`의 기존 `review_likes`(좋아요 전용)를 `review_reactions`(reaction enum)로 확장 — 팀 확인 결과 UI 목업 쪽 동작을 그대로 유지하는 방향으로 결정. 브리프 문서 자체 수정으로 처리(코드 변경 아님), 필드명 매핑(`emotion_tags`↔`emotion` 등) 및 시드 데이터 파일(`books_enriched.json`/`reviews.json`) 부재 사실도 함께 명시해 둠.
