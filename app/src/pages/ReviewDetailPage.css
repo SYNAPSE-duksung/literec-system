@@ -78,6 +78,9 @@
 .review-detail-page__reactions .btn {
   width: auto;
   padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .review-detail-page__reaction--active {

@@ -1,11 +1,16 @@
 import type { HookResult, SimilarReviewRecommendation } from '../types';
-import { similarReviewRecommendations } from '../mock/similarReviewRecommendations';
-import { useAsyncMock } from './useAsyncMock';
+import { apiFetch } from '../lib/apiClient';
+import { useAsyncApi } from './useAsyncApi';
 
 export function useSimilarReviewBooks(reviewId: string): HookResult<SimilarReviewRecommendation[]> {
-  return useAsyncMock(
-    () => similarReviewRecommendations.filter((row) => row.sourceReviewId === reviewId),
+  return useAsyncApi(
+    () =>
+      reviewId
+        ? apiFetch<SimilarReviewRecommendation[]>(
+            `/api/reviews/${encodeURIComponent(reviewId)}/similar-books`,
+          )
+        : Promise.resolve([]),
     [reviewId],
-    500,
+    [],
   );
 }

@@ -1,7 +1,7 @@
 import type { HookResult, Recommendation } from '../types';
-import { recommendations } from '../mock/recommendations';
-import { useAsyncMock } from './useAsyncMock';
+import { apiFetch } from '../lib/apiClient';
+import { useAsyncApi } from './useAsyncApi';
 
 export function useRecommendations(): HookResult<Recommendation[]> {
-  return useAsyncMock(() => recommendations, []);
+  return useAsyncApi(() => apiFetch<Recommendation[]>('/api/recommendations'), [], []);
 }

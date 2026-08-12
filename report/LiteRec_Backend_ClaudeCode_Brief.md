@@ -50,7 +50,7 @@
   - Refresh token: 만료 1~2주, DB에 저장(로그아웃/탈취 시 무효화 가능하도록), httpOnly 쿠키 또는 별도 저장소 — 프론트 구현 방식에 맞춰 Claude Code가 제안하되 **보안상 localStorage에 refresh token 직접 저장은 지양**
   - Access token 만료 시 `/api/auth/refresh`로 재발급
 - **비밀번호 해시**: bcrypt (passlib)
-- **Data files**: `data/processed/books_enriched.json` (88건, book 메타 + perplexity_raw), `data/processed/reviews.json` (isbn 외래키, 440건) — 이 두 파일을 초기 시드 데이터로 DB에 적재
+- **Data files**: `data/processed/books_naver.jsonl` (88건, 네이버 도서 API 메타 + `perplexity_review` 자유텍스트), `data/processed/llm_reviews.jsonl` (isbn 외래키, 페르소나 6종 중 5종을 책당 호 2/불호 2/혼재 1 비율로 사용 → 88권 × 5건 = 총 440건) — 이 두 파일을 초기 시드 데이터로 DB에 적재. 필드 매핑/파싱 규칙은 섹션 6 참고
 
 ---
 
@@ -303,10 +303,47 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 
 ## 6. 시드 데이터 적재
 
-- `data/processed/books_enriched.json` (88건) → `books` + `book_aspects` 테이블
-- `data/processed/reviews.json` (440건) → `reviews` 테이블 (`source='llm_generated'`)
-- 마이그레이션/시드용 1회성 스크립트는 `backend/scripts/seed.py` 형태로 분리, 반복 실행해도 중복 적재되지 않도록 upsert 처리
-- ⚠️ **블로커**: 위 두 파일은 현재 레포 전체 브랜치 히스토리에 존재하지 않음(`final_book_list_88.csv`, `prompts/*`만 `data/processed/`에 있음). 이 단계 착수 전에 ML/데이터 담당자에게 파일 위치·생성 일정을 확인 필요.
+### 6.1 `books_naver.jsonl` (88건) → `books` + `book_aspects`
+
+`books` 테이블 필드 매핑:
+
+| jsonl 필드 | DB 컬럼 |
+|---|---|
+| `isbn` | `isbn` |
+| `title` | `title` |
+| `author` | `author` |
+| `publisher` | `publisher` |
+| `image` | `cover_url` |
+| `description` | `synopsis` |
+| `product_id` | 저장 안 함 (시드 스크립트 내부 매칭용으로만 사용, DB 컬럼 없음) |
+
+`book_aspects`는 별도 컬럼이 아니라 `perplexity_review`(자유 텍스트) 한 필드에서 파싱해서 채운다. 이 필드는 88건 모두 아래와 동일한 5개 섹션 구조를 갖는 것으로 확인됨:
+
+1. "이 책을 좋아한 독자들이 주로 언급한 이유" → `liked_elements`
+2. "이 책을 별로라고 한 독자들이 주로 언급한 이유" → `disliked_elements`
+3. "최근 2년 이내 독자 반응에서 호/불호/혼재의 근거와 비율" → (대응하는 축 없음, 파싱 안 함)
+4. "자주 언급되는 정서 키워드" → `emotion_experience`
+5. "평론/수상 등 외부 평가가 독자 반응에 영향을 미쳤다면 한 줄 요약" → (대응하는 축 없음, 파싱 안 함)
+
+⚠️ `themes`(소재_및_주제), `reading_context`(독서_경험_맥락) 두 축은 `perplexity_review`의 5개 섹션 중 직접 대응하는 항목이 없다. `description`(시놉시스)에서 키워드를 뽑아 채우거나, 우선 빈 배열로 시작해도 무방하다(`IdentityRadarChart`는 5개 축 중 값이 있는 축만 그려도 정상 동작).
+
+⚠️ `identityVectors`(`trait`/`score`) 변환 관련 미해결 항목은 **섹션 9. 추후 과제** 참고 — `GET /api/books/{isbn}` 구현 전 확인 필요.
+
+### 6.2 `llm_reviews.jsonl` (88권 × 5건 = 440건) → `reviews`
+
+`reviews` 테이블 필드 매핑:
+
+| jsonl 필드 | DB 컬럼 |
+|---|---|
+| `isbn` | `isbn` (fk) |
+| `persona` | `persona` |
+| `content` | `content` |
+| (고정값) | `source = 'llm_generated'`, `user_id = null` |
+| (고정값) | `like_count = 0`, `dislike_count = 0` |
+| `sentiment`(호\|불호\|혼재) | 저장 안 함 — `emotion_tags`/`liked_points`/`disliked_points` 중 어디에도 직접 대응하지 않으므로, 이 세 컬럼은 LLM 시드 리뷰에 한해 빈 배열(`[]`)로 시작한다(자유 텍스트 리뷰라 문장 단위 태그 추출 로직은 이번 스코프에서 만들지 않음) |
+| `book_title`, `review_index`, `persona_reason` | 저장 안 함 (리뷰 생성 파이프라인 검증용 메타데이터) |
+
+마이그레이션/시드용 1회성 스크립트는 `backend/scripts/seed.py` 형태로 분리, 반복 실행해도 중복 적재되지 않도록 upsert 처리.
 
 ---
 
@@ -338,3 +375,13 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 | 마이페이지 목록 조회 | 좋아한 책/싫어요 표시한 책/내가 남긴 기록 3개 섹션 모두 기존 목록 API(`GET /api/books`, `GET /api/reviews`) + 반응 조회 API(`GET /api/users/me/book-reactions`, 로그인 유저 id)의 클라이언트 필터링만으로 충분. "전체 보기" 화면도 동일 데이터에서 개수 제한만 없앤 것이라 신규 엔드포인트 불필요 |
 | 리뷰 반응 초기 상태 조회 | `useReviewReaction(reviewId)`가 화면 진입 시 "내 반응"을 알아야 하므로 `GET /api/users/me/review-reactions`를 신규 추가(`book_reactions`의 `liked-books`와 동일 패턴). `Review` 타입(5.1)엔 반응 필드를 넣지 않음 |
 | `CURRENT_USER_ID` 목업 상수 | `useCreateReview`, `MyPage`, `MyListPage` 3곳에서 참조 중 → 로그인 연동 시 실제 인증 유저 id로 전부 교체 필요 |
+
+---
+
+## 9. 추후 과제 (미해결 항목, 기록만 해두고 지금 당장 해결하지 않음)
+
+### 9.1 `book_aspects` → `Book.identityVectors`(`trait`/`score`) 매핑 규칙
+
+- **현상**: `Book.identityVectors`(5.1)는 `{ trait, score, keywords }[]` 형태이고, `trait`는 프론트 `RADAR_TRAITS`(`잔잔함, 몰입감, 서정성, 현실성, 여운`) 5개 고정값을 쓴다. 반면 `book_aspects`(섹션 3) 컬럼명은 `emotion_experience`/`liked_elements`/`disliked_elements`/`themes`/`reading_context`로, 이 5개 trait와 이름·의미가 1:1로 대응하지 않는다.
+- **해야 할 일**: `GET /api/books/{isbn}` 응답을 만들 때 (1) `book_aspects` 5개 컬럼 → `RADAR_TRAITS` 5개 trait로 매핑하는 규칙, (2) 각 trait의 `score`(숫자, `IdentityRadarChart` 폴리곤 계산용)를 무엇으로 산출할지(예: 컬럼별 키워드 개수 환산, 별도 LLM 채점 등)를 정해야 함.
+- **상태**: 미확정. 이번 문서에서는 다루지 않고, `GET /api/books/{isbn}` 구현 착수 전 별도로 논의/확정 필요.

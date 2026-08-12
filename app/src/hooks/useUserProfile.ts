@@ -1,6 +1,5 @@
 import type { HookResult, UserProfile } from '../types';
-import { useMockStore } from '../state/MockStoreContext';
-import { useAsyncMock } from './useAsyncMock';
+import { useUserProfileContext } from '../state/UserProfileContext';
 
 export interface UseUserProfileResult extends HookResult<UserProfile | null> {
   updateProfile: (partial: Partial<UserProfile>) => void;
@@ -9,7 +8,7 @@ export interface UseUserProfileResult extends HookResult<UserProfile | null> {
 }
 
 export function useUserProfile(): UseUserProfileResult {
-  const { userProfile, updateUserProfile, dislikedBookIds, setBookReaction } = useMockStore();
-  const result = useAsyncMock<UserProfile | null>(() => userProfile, [userProfile]);
-  return { ...result, updateProfile: updateUserProfile, dislikedBookIds, setBookReaction };
+  const { data, isLoading, isError, dislikedBookIds, updateProfile, setBookReaction } =
+    useUserProfileContext();
+  return { data, isLoading, isError, dislikedBookIds, updateProfile, setBookReaction };
 }
