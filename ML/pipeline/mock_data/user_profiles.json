@@ -1,0 +1,26 @@
+[
+  {
+    "userId": "u001",
+    "preferredEmotions": ["위로", "그리움"],
+    "avoidedTraits": ["장황한 문체"],
+    "likedBookIds": ["b001", "b005"]
+  },
+  {
+    "userId": "u002",
+    "preferredEmotions": ["긴장감", "설렘"],
+    "avoidedTraits": ["느린 전개", "신파"],
+    "likedBookIds": ["b003"]
+  },
+  {
+    "userId": "u003",
+    "preferredEmotions": ["담백함", "잔잔함"],
+    "avoidedTraits": [],
+    "likedBookIds": ["b002", "b004"]
+  },
+  {
+    "userId": "u004",
+    "preferredEmotions": ["먹먹함"],
+    "avoidedTraits": ["잔인한 묘사", "직접적 감정 자극"],
+    "likedBookIds": ["b001"]
+  }
+]

@@ -1,0 +1,2466 @@
+[
+  {
+    "userId": "김지은",
+    "isbn": "9788901296906",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788925554990",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788925588650",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788925588711",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788925588735",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788932044057",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788932925349",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788932925783",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788936434120",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788936434595",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788936439743",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788936439880",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788936439965",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937434488",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937443848",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937446238",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937460449",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937460586",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937460708",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937461033",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937461798",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937463952",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788937473401",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788954638890",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788954681155",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788954682152",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788960909878",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788965234555",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788970134796",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788970135472",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788998441012",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9788998441074",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791124038192",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791124038338",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791124038499",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791124575178",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791130642574",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791130664903",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791130674643",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791130676029",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791130681009",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141602024",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141602376",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141602451",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141602567",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141603250",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141615055",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791141617226",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791159921445",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791159922527",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791162203620",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791167372864",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791167376275",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791167376442",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791167764119",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791167903662",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791168342934",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791168343108",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791169085366",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791170526643",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791170612759",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791171713929",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791171715503",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791172134297",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791173323188",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791173573910",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791173830235",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791175773370",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791175910683",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791191043297",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193078563",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193078709",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193235966",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193790960",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193904213",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193904565",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791193937822",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194368427",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194413394",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194530701",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194531395",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194654063",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194930136",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791194996057",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791197221989",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791198547514",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791199305304",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김지은",
+    "isbn": "9791199757684",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788901296906",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788925554990",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788925588650",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788925588711",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788925588735",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788932044057",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788932925349",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788932925783",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788936434120",
+    "relevance": 2,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788936434595",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788936439743",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788936439880",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788936439965",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937434488",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937443848",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937446238",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937460449",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937460586",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937460708",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937461033",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937461798",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937463952",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788937473401",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788954638890",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788954681155",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788954682152",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788960909878",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788965234555",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788970134796",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788970135472",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788998441012",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9788998441074",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791124038192",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791124038338",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791124038499",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791124575178",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791130642574",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791130664903",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791130674643",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791130676029",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791130681009",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141602024",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141602376",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141602451",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141602567",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141603250",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141615055",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791141617226",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791159921445",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791159922527",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791162203620",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791167372864",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791167376275",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791167376442",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791167764119",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791167903662",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791168342934",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791168343108",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791169085366",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791170526643",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791170612759",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791171713929",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791171715503",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791172134297",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791173323188",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791173573910",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791173830235",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791175773370",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791175910683",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791191043297",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193078563",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193078709",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193235966",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193790960",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193904213",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193904565",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791193937822",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194368427",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194413394",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194530701",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194531395",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194654063",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194930136",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791194996057",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791197221989",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791198547514",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791199305304",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "이지원",
+    "isbn": "9791199757684",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788901296906",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788925554990",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788925588650",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788925588711",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788925588735",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788932044057",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788932925349",
+    "relevance": 2,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788932925783",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788936434120",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788936434595",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788936439743",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788936439880",
+    "relevance": 1,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788936439965",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937434488",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937443848",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937446238",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937460449",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937460586",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937460708",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937461033",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937461798",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937463952",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788937473401",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788954638890",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788954681155",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788954682152",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788960909878",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788965234555",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788970134796",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788970135472",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788998441012",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9788998441074",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791124038192",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791124038338",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791124038499",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791124575178",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791130642574",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791130664903",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791130674643",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791130676029",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791130681009",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141602024",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141602376",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141602451",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141602567",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141603250",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141615055",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791141617226",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791159921445",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791159922527",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791162203620",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791167372864",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791167376275",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791167376442",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791167764119",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791167903662",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791168342934",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791168343108",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791169085366",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791170526643",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791170612759",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791171713929",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791171715503",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791172134297",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791173323188",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791173573910",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791173830235",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791175773370",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791175910683",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791191043297",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193078563",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193078709",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193235966",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193790960",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193904213",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193904565",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791193937822",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194368427",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194413394",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194530701",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194531395",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194654063",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194930136",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791194996057",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791197221989",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791198547514",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791199305304",
+    "relevance": null,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "김유진",
+    "isbn": "9791199757684",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788901296906",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788925554990",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788925588650",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788925588711",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788925588735",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788932044057",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788932925349",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788932925783",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788936434120",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788936434595",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788936439743",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788936439880",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788936439965",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937434488",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937443848",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937446238",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937460449",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937460586",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937460708",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937461033",
+    "relevance": 3,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937461798",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937463952",
+    "relevance": 2,
+    "hasRead": true,
+    "labelSource": "read"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788937473401",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788954638890",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788954681155",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788954682152",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788960909878",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788965234555",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788970134796",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788970135472",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788998441012",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9788998441074",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791124038192",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791124038338",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791124038499",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791124575178",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791130642574",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791130664903",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791130674643",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791130676029",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791130681009",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141602024",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141602376",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141602451",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141602567",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141603250",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141615055",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791141617226",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791159921445",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791159922527",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791162203620",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791167372864",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791167376275",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791167376442",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791167764119",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791167903662",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791168342934",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791168343108",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791169085366",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791170526643",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791170612759",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791171713929",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791171715503",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791172134297",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791173323188",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791173573910",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791173830235",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791175773370",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791175910683",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791191043297",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193078563",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193078709",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193235966",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193790960",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193904213",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193904565",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791193937822",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194368427",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194413394",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194530701",
+    "relevance": 1,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194531395",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194654063",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194930136",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791194996057",
+    "relevance": 0,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791197221989",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791198547514",
+    "relevance": 3,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791199305304",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  },
+  {
+    "userId": "신연주",
+    "isbn": "9791199757684",
+    "relevance": 2,
+    "hasRead": false,
+    "labelSource": "aspect_card"
+  }
+]
