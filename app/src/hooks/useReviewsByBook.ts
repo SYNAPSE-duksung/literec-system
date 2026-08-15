@@ -1,11 +1,14 @@
 import type { HookResult, Review } from '../types';
-import { useMockStore } from '../state/MockStoreContext';
-import { useAsyncMock } from './useAsyncMock';
+import { apiFetch } from '../lib/apiClient';
+import { useAsyncApi } from './useAsyncApi';
 
 export function useReviewsByBook(bookId: string): HookResult<Review[]> {
-  const { reviews } = useMockStore();
-  return useAsyncMock(
-    () => reviews.filter((review) => review.bookId === bookId),
-    [reviews, bookId],
+  return useAsyncApi(
+    () =>
+      bookId
+        ? apiFetch<Review[]>(`/api/books/${encodeURIComponent(bookId)}/reviews`)
+        : Promise.resolve([]),
+    [bookId],
+    [],
   );
 }

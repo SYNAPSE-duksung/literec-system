@@ -1,10 +1,11 @@
 import type { Book, HookResult } from '../types';
-import { books } from '../mock/books';
-import { useAsyncMock } from './useAsyncMock';
+import { fetchBook } from '../lib/bookCache';
+import { useAsyncApi } from './useAsyncApi';
 
 export function useBook(bookId: string): HookResult<Book | null> {
-  return useAsyncMock<Book | null>(
-    () => books.find((book) => book.id === bookId) ?? null,
+  return useAsyncApi<Book | null>(
+    () => (bookId ? fetchBook(bookId) : Promise.resolve(null)),
     [bookId],
+    null,
   );
 }

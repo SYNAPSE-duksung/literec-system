@@ -69,6 +69,15 @@ class EvalConfig:
     # 영향받지 않는다.
     relevant_threshold: int = 2
 
+        # Recall 계산 시 "relevant"로 인정하는 최소 relevance 점수. 원래 기본값 1
+    # (relevance>0)로 실험했을 때, relevance 분포가 후한 pilot 데이터에서는 대부분의
+    # 책이 relevant로 잡혀 Recall이 무작위 추천과 거의 구분되지 않는 문제가 있었다
+    # (실험 근거: ML/eval/analyze_recall_thresholds.py). 팀 논의 후 relevance>=2를
+    # 기본값으로 확정 - NDCG는 이 값과 무관하게 항상 0~3 등급을 그대로 가중치로 써서
+    # 영향받지 않는다.
+    relevant_threshold: int = 2
+
+
 
 @dataclass
 class UserEvalResult:
@@ -608,7 +617,13 @@ if __name__ == "__main__":
     print("\n>>> 3. 하이퍼기하분포 이론값 vs 실측값 비교 (Random Baseline sanity check)")
     N = len(book_ids)
     k_relevant_per_user = [
-        len([r for r in labels.values() if r.relevance is not None and r.relevance > 0])
+        len(
+            [
+                r
+                for r in labels.values()
+                if r.relevance is not None and r.relevance >= config.relevant_threshold
+            ]
+        )
         for labels in synthetic_relevance.values()
     ]
     theoretical_recall = {}
@@ -648,3 +663,4 @@ if __name__ == "__main__":
                 f"    k={k:<3} Recall@{k}={stats['recall']:.4f}  "
                 f"NDCG@{k}={stats['ndcg']:.4f}  (n_users={stats['n_users']})"
             )
+

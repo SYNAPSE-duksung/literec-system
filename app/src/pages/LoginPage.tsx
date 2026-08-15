@@ -5,14 +5,29 @@ import { Button } from '../components/common/Button';
 import './LoginPage.css';
 
 interface LoginPageProps {
-  onLogin: () => void;
+  onLogin: (email: string, password: string) => Promise<void>;
   onGoSignup: () => void;
 }
 
 export function LoginPage({ onLogin, onGoSignup }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const canSubmit = email.length > 3 && password.length > 3;
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const canSubmit = email.length > 3 && password.length > 3 && !submitting;
+
+  const handleLogin = async () => {
+    if (!canSubmit) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onLogin(email, password);
+    } catch {
+      setError('이메일 또는 비밀번호를 확인해주세요');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="login-page">
@@ -34,9 +49,10 @@ export function LoginPage({ onLogin, onGoSignup }: LoginPageProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {error && <p className="login-page__error">{error}</p>}
       </div>
 
-      <PrimaryButton disabled={!canSubmit} onClick={onLogin}>
+      <PrimaryButton disabled={!canSubmit} onClick={handleLogin}>
         로그인
       </PrimaryButton>
 

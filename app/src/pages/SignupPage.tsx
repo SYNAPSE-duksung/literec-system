@@ -7,8 +7,14 @@ import './SignupPage.css';
 
 const EMAIL_PATTERN = /\S+@\S+\.\S+/;
 
+export interface SignupInput {
+  name: string;
+  email: string;
+  password: string;
+}
+
 interface SignupPageProps {
-  onSignupComplete: () => void;
+  onSignupComplete: (input: SignupInput) => Promise<void>;
   onBack: () => void;
 }
 
@@ -17,6 +23,8 @@ export function SignupPage({ onSignupComplete, onBack }: SignupPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const emailValid = email.length === 0 || EMAIL_PATTERN.test(email);
   const passwordsMatch = confirmPassword.length === 0 || password === confirmPassword;
@@ -25,7 +33,21 @@ export function SignupPage({ onSignupComplete, onBack }: SignupPageProps) {
     name.trim().length > 0 &&
     EMAIL_PATTERN.test(email) &&
     password.length > 3 &&
-    password === confirmPassword;
+    password === confirmPassword &&
+    !submitting;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setError(null);
+    setSubmitting(true);
+    try {
+      await onSignupComplete({ name: name.trim(), email, password });
+    } catch {
+      setError('이미 가입된 이메일이거나 요청을 처리할 수 없어요');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="signup-page">
@@ -61,9 +83,10 @@ export function SignupPage({ onSignupComplete, onBack }: SignupPageProps) {
           onChange={(e) => setConfirmPassword(e.target.value)}
           error={!passwordsMatch ? '비밀번호가 일치하지 않아요' : undefined}
         />
+        {error && <p className="signup-page__error">{error}</p>}
       </div>
 
-      <PrimaryButton disabled={!canSubmit} onClick={onSignupComplete}>
+      <PrimaryButton disabled={!canSubmit} onClick={handleSubmit}>
         가입하고 시작하기
       </PrimaryButton>
 
