@@ -2,7 +2,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.models import BookReaction
+from app.models import Book, BookReaction
+
+
+def get_books_by_isbn(db: Session, isbn_list: list[str]) -> list[Book]:
+    return db.query(Book).filter(Book.isbn.in_(isbn_list)).all()
 
 
 def set_reaction(db: Session, isbn: str, user_id: uuid.UUID, reaction: str) -> None:

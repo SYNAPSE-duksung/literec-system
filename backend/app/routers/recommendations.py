@@ -1,45 +1,55 @@
 import random
 import uuid
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
-from app.models import Book, Review
+from app.models import Book, Review, User
 from app.schemas.recommendation import RecommendationOut, SimilarReviewRecommendationOut
+from app.security import get_current_user
+from app.services import book_service
 
 router = APIRouter(prefix="/api", tags=["recommendations"])
 
-# UI_DESIGN_SPEC.md의 RADAR_TRAITS와 동일한 5개 값 — 실제 매칭 로직 없이 더미 표시용으로만 사용.
-RADAR_TRAITS = ["잔잔함", "몰입감", "서정성", "현실성", "여운"]
-
-HOOK_LINE_TEMPLATES = [
-    "지금 기분에 잘 어울리는 한 권이에요",
-    "요즘 관심사와 닿아 있는 이야기예요",
-    "천천히 곱씹으며 읽기 좋은 책이에요",
-]
-
 
 @router.get("/recommendations", response_model=list[RecommendationOut])
-def get_recommendations(
+async def get_recommendations(
     n: int = Query(default=10, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[RecommendationOut]:
-    """완전 랜덤 N권을 반환하는 더미 구현.
+    """ML 서버(/recommend)를 호출해 유저 프로필 기반 추천을 반환한다."""
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(
+                f"{settings.ml_server_url}/recommend",
+                json={"user_id": str(current_user.id), "k": n},
+                timeout=10.0,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError:
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ML 서버 연결 실패")
 
-    실제 추천 로직(임베딩/클러스터링/XAI)은 ML 파트에서 별도로 진행 중이며,
-    이 엔드포인트는 그 연동 전까지 사용하는 임시(dummy) 구현이다.
-    """
-    books = db.query(Book).all()
-    sample = random.sample(books, k=min(n, len(books)))
+    recommended = resp.json()  # [{book_id, hook_line, matched_trait, explanation}, ...]
+    if not recommended:
+        # 온보딩 미완료 등으로 ML 프로필이 아직 없는 유저 — 빈 추천 목록 반환
+        return []
+
+    isbn_list = [item["book_id"] for item in recommended]
+    books_by_isbn = {b.isbn: b for b in book_service.get_books_by_isbn(db, isbn_list)}
+
     return [
         RecommendationOut(
-            bookId=book.isbn,
-            hookLine=random.choice(HOOK_LINE_TEMPLATES),
-            matchedTrait=random.choice(RADAR_TRAITS),
-            explanation=f"'{book.title}'을(를) 추천해요. (더미 추천 — ML 연동 전 임시 로직)",
+            bookId=item["book_id"],
+            hookLine=item["hook_line"],
+            matchedTrait=item["matched_trait"],
+            explanation=item["explanation"],
         )
-        for book in sample
+        for item in recommended
+        if item["book_id"] in books_by_isbn  # ML이 반환한 isbn이 DB에 없으면(시드 불일치 등) 건너뜀
     ]
 
 

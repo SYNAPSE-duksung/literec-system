@@ -28,16 +28,18 @@ from __future__ import annotations
 import json
 import sys
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
-from clustering import compute_book_identities, global_cluster
+from clustering import BookIdentity, GlobalClusterResult, compute_book_identities, global_cluster
 from coldstart import augment_book_identities, load_book_descriptions
 from embedding import embed_reviews
 from matching import DEFAULT_LAMBDA, cosine_max_sim
 from user_profile import UserProfileVectors, build_user_profiles
+from xai import build_review_embedding_index
 
 DATA_PROCESSED_DIR = Path(__file__).parent.parent.parent / "data" / "processed"
 STRUCTURED_REVIEWS_PATH = DATA_PROCESSED_DIR / "structured_reviews.jsonl"
@@ -45,7 +47,17 @@ DEFAULT_USER_RECORDS_PATH = (
     Path(__file__).parent.parent / "eval" / "eval_data" / "eval_users.json"
 )
 
-_catalog_cache: dict[str, list[np.ndarray]] | None = None
+
+@dataclass
+class CatalogBundle:
+    vectors_by_book: dict[str, list[np.ndarray]]  # recommend()용 (콜드스타트 결 포함)
+    book_identities: dict[str, BookIdentity]  # explain용 (콜드스타트 미포함)
+    cluster_result: GlobalClusterResult  # xai.describe_facet()이 요구
+    review_embeddings: dict[str, np.ndarray]  # xai.find_medoid_review_id()가 요구
+    reviews_by_id: dict[str, dict]  # xai.describe_facet()이 요구
+
+
+_catalog_bundle_cache: CatalogBundle | None = None
 _user_profiles_cache: dict[str, UserProfileVectors] | None = None
 
 
@@ -57,23 +69,39 @@ def _load_structured_reviews(path: Path = STRUCTURED_REVIEWS_PATH) -> list[dict]
     return reviews
 
 
-def build_catalog() -> dict[str, list[np.ndarray]]:
+def build_catalog_bundle() -> CatalogBundle:
     """Phase 1(임베딩) -> Phase 2(클러스터링) -> Phase 6(콜드스타트)를 순서대로
-    실행해, book_id -> 매칭용 벡터 리스트(콜드스타트 결 포함)를 만든다.
+    실행해, recommend()용 벡터와 explain용 클러스터링 산출물을 함께 만든다.
     """
     reviews = _load_structured_reviews()
+    reviews_by_id = {r["review_id"]: r for r in reviews}
     review_ids = [r["review_id"] for r in reviews]
     book_ids = [r["book_id"] for r in reviews]
 
     _, embeddings = embed_reviews(reviews)
+    review_embeddings = build_review_embedding_index(review_ids, embeddings)
 
     cluster_result = global_cluster(review_ids, book_ids, embeddings)
     book_identities = compute_book_identities(cluster_result)
 
     descriptions = load_book_descriptions()
     review_counts = Counter(book_ids)
+    vectors_by_book = augment_book_identities(book_identities, descriptions, review_counts)
 
-    return augment_book_identities(book_identities, descriptions, review_counts)
+    return CatalogBundle(
+        vectors_by_book=vectors_by_book,
+        book_identities=book_identities,
+        cluster_result=cluster_result,
+        review_embeddings=review_embeddings,
+        reviews_by_id=reviews_by_id,
+    )
+
+
+def build_catalog() -> dict[str, list[np.ndarray]]:
+    """기존 시그니처 유지 — ML/eval/evaluation.py가 그대로 쓸 수 있도록.
+    내부적으로 build_catalog_bundle()을 한 번만 계산해 재사용한다.
+    """
+    return build_catalog_bundle().vectors_by_book
 
 
 def build_user_profile_index(
@@ -82,6 +110,24 @@ def build_user_profile_index(
     with open(path, encoding="utf-8") as f:
         users = json.load(f)
     return build_user_profiles(users)
+
+
+def ensure_catalog_loaded(force_rebuild: bool = False) -> CatalogBundle:
+    """ML/serving/main.py가 카탈로그 캐시를 읽고 쓰는 유일한 통로.
+    모듈 전역(_catalog_bundle_cache)을 직접 import해서 쓰지 말 것 — import 시점의
+    스냅샷이 고정되어 이후 갱신이 반영되지 않는다."""
+    global _catalog_bundle_cache
+    if _catalog_bundle_cache is None or force_rebuild:
+        _catalog_bundle_cache = build_catalog_bundle()
+    return _catalog_bundle_cache
+
+
+def ensure_profiles_loaded(force_rebuild: bool = False) -> dict[str, UserProfileVectors]:
+    """ML/serving/main.py가 유저 프로필 캐시를 읽고 쓰는 유일한 통로."""
+    global _user_profiles_cache
+    if _user_profiles_cache is None or force_rebuild:
+        _user_profiles_cache = build_user_profile_index()
+    return _user_profiles_cache
 
 
 def _score(
@@ -96,20 +142,17 @@ def _score(
 
 
 def recommend(user_id: str, k: int = 10) -> list[str]:
-    """user_id를 받아 book_id Top-K 추천 리스트 반환 (DESIGN.md 3절 인터페이스)."""
-    global _catalog_cache, _user_profiles_cache
+    """user_id를 받아 book_id Top-K 추천 리스트 반환 (DESIGN.md 3절 인터페이스).
+    기존과 동일한 인터페이스 — 내부만 ensure_*_loaded()를 쓰도록 리팩터링했다."""
+    bundle = ensure_catalog_loaded()
+    profiles = ensure_profiles_loaded()
 
-    if _catalog_cache is None:
-        _catalog_cache = build_catalog()
-    if _user_profiles_cache is None:
-        _user_profiles_cache = build_user_profile_index()
-
-    profile = _user_profiles_cache.get(user_id)
+    profile = profiles.get(user_id)
     if profile is None:
         return []
 
     scored = [
-        (book_id, _score(profile, vectors)) for book_id, vectors in _catalog_cache.items()
+        (book_id, _score(profile, vectors)) for book_id, vectors in bundle.vectors_by_book.items()
     ]
     scored.sort(key=lambda pair: pair[1], reverse=True)
     return [book_id for book_id, _ in scored[:k]]

@@ -87,6 +87,33 @@ def build_user_profiles(
     return profiles
 
 
+def build_single_user_profile(
+    user_id: str,
+    preferred_emotions: list[str],
+    avoided_traits: list[str],
+    model_name: str = DEFAULT_MODEL_NAME,
+) -> UserProfileVectors:
+    """온보딩/마이페이지에서 넘어온 취향 1명분을 UserProfileVectors로 변환한다.
+
+    build_user_profiles()와 동일한 문장화 규칙(to_preferred_sentence/to_avoided_sentence)을
+    재사용한다. 캐시에 직접 쓰지 않는다 — 캐시 mutation은 호출부(ML/serving/main.py) 책임.
+    """
+    pref_sentence = to_preferred_sentence(preferred_emotions)
+    avoid_sentence = to_avoided_sentence(avoided_traits)
+
+    zero_vector = np.zeros(EMBEDDING_DIM, dtype=np.float32)
+    preferred_vector = embed([pref_sentence], model_name=model_name)[0] if pref_sentence else zero_vector
+    has_avoided = bool(avoid_sentence)
+    avoided_vector = embed([avoid_sentence], model_name=model_name)[0] if has_avoided else zero_vector
+
+    return UserProfileVectors(
+        user_id=user_id,
+        preferred_vector=preferred_vector,
+        avoided_vector=avoided_vector,
+        has_avoided=has_avoided,
+    )
+
+
 def save_user_profiles(path: str | Path, profiles: dict[str, UserProfileVectors]) -> None:
     user_ids = list(profiles.keys())
     np.savez_compressed(
