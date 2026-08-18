@@ -115,7 +115,14 @@ interface Book {
   publisher: string;
   coverUrl: string;
   synopsis: string;
+  // trait/score 매핑(스코어링)이 미확정이라 현재 항상 빈 배열(LiteRec_Backend_ClaudeCode_Brief.md §9.1) — 확정 전까지 6.5의 RadarChart는 렌더링하지 않는다(identityVectors.length > 0일 때만 표시)
   identityVectors: { trait: string; score: number; keywords: string[] }[];
+  // 신규(2026-08-19): book_aspects 원본 축 텍스트 — 스코어링 없이 그대로 노출
+  aspects: {
+    emotionExperience: string[]; // 정서_경험
+    likedElements: string[];     // 좋았던_요소
+    dislikedElements: string[];  // 별로였던_요소
+  };
 }
 
 interface Review {
@@ -261,6 +268,8 @@ TopHeader (뒤로가기 + 책 제목)
 
 [이 책의 결] 카드
   RadarChart(identityVectors) — SVG polygon 직접 계산, trait 5개 축
+  ⚠️ identityVectors는 스코어링 미확정으로 현재 항상 빈 배열 — 채워지기 전까지 RadarChart는 렌더링하지 않는다
+  대신(2026-08-19 신규) aspects의 원본 축 텍스트를 라벨+태그로 표시: 느낀 정서(emotionExperience) / 좋았던 점(likedElements) / 아쉬웠던 점(dislikedElements), 각 값이 있을 때만 렌더링
 
 XAI 설명 문구 (하트 아이콘 + explanation)
 

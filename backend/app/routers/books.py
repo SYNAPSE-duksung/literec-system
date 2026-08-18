@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
 from app.models import Book, Review, User
-from app.schemas.book import BookOut, BookReactionRequest
+from app.schemas.book import BookAspectsOut, BookOut, BookReactionRequest
 from app.schemas.review import ReviewOut
 from app.security import get_current_user
 from app.services import book_service, review_service
@@ -12,6 +12,7 @@ router = APIRouter(prefix="/api/books", tags=["books"])
 
 
 def _book_out(book: Book) -> BookOut:
+    aspects = book.aspects
     return BookOut(
         id=book.isbn,
         title=book.title,
@@ -19,21 +20,26 @@ def _book_out(book: Book) -> BookOut:
         publisher=book.publisher,
         coverUrl=book.cover_url,
         synopsis=book.synopsis,
-        # book_aspects → identityVectors(RADAR_TRAITS) 매핑 규칙 미확정(브리프 §9.1) —
-        # 이번 스코프에서는 빈 배열로 반환하기로 확정.
+        # book_aspects → identityVectors(RADAR_TRAITS) 매핑 규칙(스코어링) 미확정(브리프 §9.1) —
+        # 이번 스코프에서는 빈 배열로 반환하기로 확정. 원본 축 텍스트는 aspects로 노출한다.
         identityVectors=[],
+        aspects=BookAspectsOut(
+            emotionExperience=aspects.emotion_experience if aspects else [],
+            likedElements=aspects.liked_elements if aspects else [],
+            dislikedElements=aspects.disliked_elements if aspects else [],
+        ),
     )
 
 
 @router.get("", response_model=list[BookOut])
 def list_books(db: Session = Depends(get_db)) -> list[BookOut]:
-    books = db.query(Book).order_by(Book.title).all()
+    books = db.query(Book).options(joinedload(Book.aspects)).order_by(Book.title).all()
     return [_book_out(book) for book in books]
 
 
 @router.get("/{isbn}", response_model=BookOut)
 def get_book(isbn: str, db: Session = Depends(get_db)) -> BookOut:
-    book = db.get(Book, isbn)
+    book = db.get(Book, isbn, options=[joinedload(Book.aspects)])
     if book is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "도서를 찾을 수 없습니다.")
     return _book_out(book)

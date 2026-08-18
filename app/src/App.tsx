@@ -257,6 +257,7 @@ export function App() {
       rightSlot={rightSlot}
       showBottomNav={showBottomNav}
       activeTab={activeTab}
+      scrollKey={JSON.stringify(screen)}
       onNavigateTab={(name) => {
         if (name === 'home') navigate({ name: 'home' });
         else if (name === 'board') navigate({ name: 'board' });

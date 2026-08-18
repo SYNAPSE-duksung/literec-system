@@ -81,6 +81,23 @@
   font-weight: 600;
 }
 
+.book-detail-page__aspect-group {
+  margin-top: var(--space-sm);
+}
+
+.book-detail-page__aspect-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.book-detail-page__aspect-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .book-detail-page__reviews-header {
   display: flex;
   align-items: center;

@@ -384,4 +384,4 @@ GET    /api/reviews/{id}/similar-books → useSimilarReviewBooks(reviewId)
 
 - **현상**: `Book.identityVectors`(5.1)는 `{ trait, score, keywords }[]` 형태이고, `trait`는 프론트 `RADAR_TRAITS`(`잔잔함, 몰입감, 서정성, 현실성, 여운`) 5개 고정값을 쓴다. 반면 `book_aspects`(섹션 3) 컬럼명은 `emotion_experience`/`liked_elements`/`disliked_elements`/`themes`/`reading_context`로, 이 5개 trait와 이름·의미가 1:1로 대응하지 않는다.
 - **해야 할 일**: `GET /api/books/{isbn}` 응답을 만들 때 (1) `book_aspects` 5개 컬럼 → `RADAR_TRAITS` 5개 trait로 매핑하는 규칙, (2) 각 trait의 `score`(숫자, `IdentityRadarChart` 폴리곤 계산용)를 무엇으로 산출할지(예: 컬럼별 키워드 개수 환산, 별도 LLM 채점 등)를 정해야 함.
-- **상태**: 미확정. 이번 문서에서는 다루지 않고, `GET /api/books/{isbn}` 구현 착수 전 별도로 논의/확정 필요.
+- **상태(2026-08-19 갱신)**: `trait`/`score` 매핑(스코어링)은 여전히 미확정 — `identityVectors`는 계속 빈 배열로 반환하고, `RadarChart`는 값이 채워지기 전까지 렌더링하지 않는다. 대신 스코어링 없이 `book_aspects` 원본 축 텍스트(`emotion_experience`/`liked_elements`/`disliked_elements`)를 `BookOut.aspects`로 그대로 노출하고, 책 상세 "이 책의 결" 카드가 이를 라벨+태그로 표시하도록 함(`UI_DESIGN_SPEC.md` 5.1/6.5 갱신). `themes`/`reading_context`는 `seed.py`의 `parse_book_aspects()`가 항상 빈 배열로 채우고 있어 노출 대상에서 제외. trait/score 스코어링 자체는 여전히 별도 논의/확정 필요.
