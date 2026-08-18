@@ -52,7 +52,12 @@ export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDe
   return (
     <div className="book-detail-page">
       <div className="book-detail-page__summary">
-        <img className="book-detail-page__cover" src={book.coverUrl} alt={book.title} />
+        <img
+          className="book-detail-page__cover"
+          src={book.coverUrl}
+          alt={book.title}
+          decoding="async"
+        />
         <div>
           <p className="book-detail-page__title">{book.title}</p>
           <p className="book-detail-page__author">

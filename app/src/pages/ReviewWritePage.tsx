@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useBook } from '../hooks/useBook';
 import { useBooks } from '../hooks/useBooks';
+import { useReview } from '../hooks/useReview';
 import { ReviewEditor } from '../components/review/ReviewEditor';
 import { BookCard } from '../components/book/BookCard';
 import { Card } from '../components/common/Card';
@@ -11,20 +12,28 @@ import './ReviewWritePage.css';
 
 interface ReviewWritePageProps {
   bookId: string;
-  onCreated: (reviewId: string) => void;
+  // 있으면 수정 모드 — 이 리뷰를 새로 만들지 않고 고친다(책 선택은 비활성화).
+  reviewId?: string;
+  onSaved: (reviewId: string) => void;
 }
 
-export function ReviewWritePage({ bookId: initialBookId, onCreated }: ReviewWritePageProps) {
-  const canChangeBook = !initialBookId;
+export function ReviewWritePage({ bookId: initialBookId, reviewId, onSaved }: ReviewWritePageProps) {
+  const isEditing = Boolean(reviewId);
+  const canChangeBook = !initialBookId && !isEditing;
   const [selectedBookId, setSelectedBookId] = useState(initialBookId);
   const [query, setQuery] = useState('');
 
   const { data: book } = useBook(selectedBookId);
   const { data: allBooks } = useBooks();
+  const { data: editingReview, isLoading: editingReviewLoading } = useReview(reviewId ?? '');
 
-  const handleCreated = (review: Review) => {
-    onCreated(review.id);
+  const handleSaved = (review: Review) => {
+    onSaved(review.id);
   };
+
+  if (isEditing && editingReviewLoading) {
+    return <div className="review-write-page empty-state">불러오는 중이에요</div>;
+  }
 
   if (!selectedBookId) {
     const filtered = allBooks.filter(
@@ -62,7 +71,12 @@ export function ReviewWritePage({ bookId: initialBookId, onCreated }: ReviewWrit
     <div className="review-write-page">
       {book && (
         <Card className="review-write-page__book">
-          <img className="review-write-page__cover" src={book.coverUrl} alt={book.title} />
+          <img
+            className="review-write-page__cover"
+            src={book.coverUrl}
+            alt={book.title}
+            decoding="async"
+          />
           <div>
             <p className="review-write-page__title">{book.title}</p>
             <p className="review-write-page__author">
@@ -78,7 +92,11 @@ export function ReviewWritePage({ bookId: initialBookId, onCreated }: ReviewWrit
         </Button>
       )}
 
-      <ReviewEditor bookId={selectedBookId} onCreated={handleCreated} />
+      <ReviewEditor
+        bookId={selectedBookId}
+        editingReview={editingReview ?? undefined}
+        onSaved={handleSaved}
+      />
     </div>
   );
 }

@@ -54,7 +54,13 @@ export function BookCard({ book, onClick, children, showLikeButton = true }: Boo
         </div>
       )}
       <div className="book-card__row">
-        <img className="book-card__cover" src={book.coverUrl} alt={book.title} />
+        <img
+          className="book-card__cover"
+          src={book.coverUrl}
+          alt={book.title}
+          loading="lazy"
+          decoding="async"
+        />
         <div className="book-card__info">
           <p className="book-card__title">{book.title}</p>
           <p className="book-card__author">

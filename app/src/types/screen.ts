@@ -7,7 +7,7 @@ export type Screen =
   | { name: 'home' }
   | { name: 'bookDetail'; bookId: string }
   | { name: 'board' }
-  | { name: 'reviewWrite'; bookId: string }
+  | { name: 'reviewWrite'; bookId: string; reviewId?: string }
   | { name: 'reviewDetail'; reviewId: string }
   | { name: 'search' }
   | { name: 'mypage' }

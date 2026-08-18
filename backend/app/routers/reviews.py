@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Book, Review, User
-from app.schemas.review import ReviewCreate, ReviewOut, ReviewReactionRequest
+from app.models import Book, Review, ReviewReaction, User
+from app.schemas.review import ReviewCreate, ReviewOut, ReviewReactionRequest, ReviewUpdate
 from app.security import get_current_user
 from app.services import review_service
 
@@ -62,6 +62,46 @@ def create_review(
     db.refresh(review)
     review.author = current_user
     return review_service.to_review_out(review)
+
+
+@router.patch("/{review_id}", response_model=ReviewOut)
+def update_review(
+    review_id: uuid.UUID,
+    payload: ReviewUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReviewOut:
+    review = db.query(Review).options(joinedload(Review.author)).filter(Review.id == review_id).first()
+    if review is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "리뷰를 찾을 수 없습니다.")
+    if review.user_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "본인이 작성한 기록만 수정할 수 있습니다.")
+
+    review.content = payload.content
+    review.emotion_tags = payload.emotion
+    review.liked_points = payload.liked
+    review.disliked_points = payload.disliked
+    db.commit()
+    db.refresh(review)
+    return review_service.to_review_out(review)
+
+
+@router.delete("/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(
+    review_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    review = db.get(Review, review_id)
+    if review is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "리뷰를 찾을 수 없습니다.")
+    if review.user_id != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "본인이 작성한 기록만 삭제할 수 있습니다.")
+
+    # review_reactions가 review_id를 참조하므로(FK), 리뷰 자체를 지우기 전에 먼저 지운다.
+    db.query(ReviewReaction).filter(ReviewReaction.review_id == review.id).delete()
+    db.delete(review)
+    db.commit()
 
 
 @router.post("/{review_id}/reaction", status_code=status.HTTP_204_NO_CONTENT)
