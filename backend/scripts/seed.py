@@ -1,14 +1,20 @@
-"""books_naver.jsonl / llm_reviews.jsonl을 DB에 upsert하는 시드 스크립트.
+"""books_naver.jsonl / llm_reviews.jsonl을 DB에 upsert하는 시드 스크립트 (정본).
 
 실행 전 `alembic upgrade head`로 스키마가 먼저 적용되어 있어야 한다.
 실행: backend/ 디렉터리에서 `uv run python scripts/seed.py`
 반복 실행해도 중복 적재되지 않도록 전부 upsert(ON CONFLICT DO UPDATE)로 처리한다.
+
+LLM 생성 리뷰(440건)는 `결-bot` 유저에 귀속시키고, `created_at`을 llm_reviews.jsonl이
+최초로 커밋된 시각(커밋 1c96df5, 2026-07-26 23:28:11 +09:00)으로 고정, `is_processed=True`로
+적재한다 — server_default=now()에 맡기면 재시딩할 때마다 "시드 실행 시각"이 찍혀 440건이
+전부 같은 순간에 작성된 것처럼 보이는 문제가 있었다.
 """
 
 import json
 import re
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -17,7 +23,7 @@ from sqlalchemy.orm import Session
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.db import SessionLocal  # noqa: E402
-from app.models import Book, BookAspect, Review  # noqa: E402
+from app.models import Book, BookAspect, Review, User  # noqa: E402
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 BOOKS_FILE = DATA_DIR / "books_naver.jsonl"
@@ -26,6 +32,11 @@ REVIEWS_FILE = DATA_DIR / "llm_reviews.jsonl"
 # llm_reviews.jsonl에는 자연 유니크 키가 없어, 재실행해도 같은 id가 나오도록
 # 고정된 네임스페이스로 uuid5를 생성한다(리뷰 upsert 키로 사용).
 SEED_REVIEW_NAMESPACE = uuid.UUID("03ae0456-9996-46c8-8190-59c8c579f3f4")
+
+LLM_BOT_NAME = "결-bot"
+
+KST = timezone(timedelta(hours=9))
+LLM_REVIEWS_SEED_CREATED_AT = datetime(2026, 7, 26, 23, 28, 11, tzinfo=KST)
 
 SECTION_HEADER_RE = re.compile(r"^##\s*(\d+)\.", re.MULTILINE)
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)")
@@ -79,6 +90,17 @@ def _read_jsonl(path: Path) -> list[dict]:
         return [json.loads(line) for line in f if line.strip()]
 
 
+def get_or_create_llm_bot(db: Session) -> User:
+    bot = db.query(User).filter(User.name == LLM_BOT_NAME, User.auth_provider == "local").first()
+    if bot is not None:
+        return bot
+    bot = User(name=LLM_BOT_NAME, email=None, password_hash=None, auth_provider="local")
+    db.add(bot)
+    db.commit()
+    db.refresh(bot)
+    return bot
+
+
 def seed_books(db: Session) -> int:
     records = _read_jsonl(BOOKS_FILE)
     for row in records:
@@ -122,6 +144,8 @@ def seed_books(db: Session) -> int:
 
 def seed_reviews(db: Session) -> int:
     records = _read_jsonl(REVIEWS_FILE)
+    bot = get_or_create_llm_bot(db)
+
     for row in records:
         review_id = uuid.uuid5(
             SEED_REVIEW_NAMESPACE, f"{row['isbn']}:{row['persona']}:{row['review_index']}"
@@ -129,19 +153,24 @@ def seed_reviews(db: Session) -> int:
         stmt = pg_insert(Review).values(
             id=review_id,
             isbn=row["isbn"],
-            user_id=None,
+            user_id=bot.id,
             source="llm_generated",
             persona=row["persona"],
             content=row["content"],
             emotion_tags=[],
             liked_points=[],
             disliked_points=[],
+            created_at=LLM_REVIEWS_SEED_CREATED_AT,
+            is_processed=True,
         )
         stmt = stmt.on_conflict_do_update(
             index_elements=[Review.id],
             set_={
                 "content": stmt.excluded.content,
                 "persona": stmt.excluded.persona,
+                "user_id": stmt.excluded.user_id,
+                "created_at": stmt.excluded.created_at,
+                "is_processed": stmt.excluded.is_processed,
             },
         )
         db.execute(stmt)

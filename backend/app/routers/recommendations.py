@@ -30,27 +30,33 @@ async def get_recommendations(
                 timeout=10.0,
             )
             resp.raise_for_status()
+            recommended = resp.json()  # [{book_id, hook_line, matched_trait, explanation}, ...]
+            if not recommended:
+                # 온보딩 미완료 등으로 ML 프로필이 아직 없는 유저 — 빈 추천 목록 반환
+                return []
+            isbn_list = [item["book_id"] for item in recommended]
         except httpx.HTTPError:
             raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ML 서버 연결 실패")
+        except (ValueError, KeyError, TypeError):
+            # ML이 200을 주면서 JSON이 깨졌거나 예상 필드가 빠진 경우(스키마 드리프트) —
+            # 그대로 500을 흘려보내지 않고 "ML 서버 연결 실패"와 동일하게 503으로 응답.
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ML 서버 응답 형식 오류")
 
-    recommended = resp.json()  # [{book_id, hook_line, matched_trait, explanation}, ...]
-    if not recommended:
-        # 온보딩 미완료 등으로 ML 프로필이 아직 없는 유저 — 빈 추천 목록 반환
-        return []
-
-    isbn_list = [item["book_id"] for item in recommended]
     books_by_isbn = {b.isbn: b for b in book_service.get_books_by_isbn(db, isbn_list)}
 
-    return [
-        RecommendationOut(
-            bookId=item["book_id"],
-            hookLine=item["hook_line"],
-            matchedTrait=item["matched_trait"],
-            explanation=item["explanation"],
-        )
-        for item in recommended
-        if item["book_id"] in books_by_isbn  # ML이 반환한 isbn이 DB에 없으면(시드 불일치 등) 건너뜀
-    ]
+    try:
+        return [
+            RecommendationOut(
+                bookId=item["book_id"],
+                hookLine=item["hook_line"],
+                matchedTrait=item["matched_trait"],
+                explanation=item["explanation"],
+            )
+            for item in recommended
+            if item["book_id"] in books_by_isbn  # ML이 반환한 isbn이 DB에 없으면(시드 불일치 등) 건너뜀
+        ]
+    except (KeyError, TypeError):
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "ML 서버 응답 형식 오류")
 
 
 @router.get("/reviews/{review_id}/similar-books", response_model=list[SimilarReviewRecommendationOut])

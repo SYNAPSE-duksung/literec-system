@@ -4,8 +4,8 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir uv
 
-COPY ML/pyproject.toml ./ML/pyproject.toml
-RUN cd ML && uv sync --no-install-project
+COPY ML/pyproject.toml ML/uv.lock ./ML/
+RUN cd ML && uv sync --frozen --no-install-project
 
 COPY ML/ ./ML/
 COPY data/processed/ ./data/processed/

@@ -87,23 +87,26 @@ is_processed: Mapped[bool] = mapped_column(Boolean, server_default="false", null
 
 **0-1b. `reviews.created_at` 값 정정 — 시드 스크립트 수정 (신규)**
 
-`backend/scripts/seed_data.py`는 `data/processed/llm_reviews.jsonl`(440건)을 적재할 때 `created_at`을 명시하지 않는다. 그 결과 컬럼의 `server_default=func.now()`가 적용되어, **440건 전부가 "시드 스크립트를 마지막으로 실행한 시각"**으로 찍힌다. 프론트(`ReviewCard`/`ReviewDetailPage`)는 이미 이 값을 그대로 렌더링하고 있으므로, 지금 상태로는 리뷰 440건이 전부 같은 날 같은 시각에 작성된 것처럼 보인다.
+> **정정(2026-08-18)**: STEP 0 실제 구현 과정에서 시딩 스크립트가 `backend/scripts/seed_data.py`(created_at/is_processed는 맞게 세팅하지만 `book_aspects`는 전혀 채우지 않음)와 `backend/scripts/seed.py`(book_aspects까지 upsert하지만 created_at/is_processed는 세팅 안 해서 아래 버그를 되살림) 두 개로 갈라져 있었다. `report/LiteRec_Backend_ClaudeCode_Brief.md` §7이 원래 지정한 이름(`seed.py`)과 더 안전한 upsert 구조(uuid5 고정키, delete 없이 upsert라 `review_reactions` FK 위반 위험 자체가 없음)를 기준으로 `seed.py`를 정본으로 통합하고 `seed_data.py`는 삭제했다. 아래 내용은 이 통합된 `seed.py` 기준이다.
+
+`backend/scripts/seed.py`의 `seed_reviews()`는 `data/processed/llm_reviews.jsonl`(440건)을 적재할 때 원래 `created_at`을 명시하지 않았다. 그 결과 컬럼의 `server_default=func.now()`가 적용되어, **440건 전부가 "시드 스크립트를 마지막으로 실행한 시각"**으로 찍힌다. 프론트(`ReviewCard`/`ReviewDetailPage`)는 이미 이 값을 그대로 렌더링하고 있으므로, 지금 상태로는 리뷰 440건이 전부 같은 날 같은 시각에 작성된 것처럼 보인다.
 
 `llm_reviews.jsonl` 자체에는 작성 시각 필드가 없으므로, **이 파일이 최초로 리포지토리에 커밋된 시각**을 대신 사용한다(`git log --diff-filter=A --follow -- data/processed/llm_reviews.jsonl` → 커밋 `1c96df5`, **2026-07-26 23:28:11 +09:00**).
 
 ```python
-# backend/scripts/seed_data.py
+# backend/scripts/seed.py
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 LLM_REVIEWS_SEED_CREATED_AT = datetime(2026, 7, 26, 23, 28, 11, tzinfo=KST)
 
-# 리뷰 insert 시:
-Review(
+# seed_reviews()의 upsert values/on_conflict_do_update 양쪽 모두에 반영:
+pg_insert(Review).values(
+    id=review_id,             # uuid5(SEED_REVIEW_NAMESPACE, f"{isbn}:{persona}:{review_index}")
     isbn=row["isbn"],
-    user_id=llm_bot_user_id,
+    user_id=bot.id,           # get_or_create_llm_bot()으로 조회/생성한 "결-bot" 유저
     source="llm_generated",
-    persona=row.get("persona"),
+    persona=row["persona"],
     content=row["content"],
     created_at=LLM_REVIEWS_SEED_CREATED_AT,
     is_processed=True,
@@ -119,7 +122,7 @@ SET created_at = '2026-07-26 23:28:11+09', is_processed = TRUE
 WHERE source = 'llm_generated';
 ```
 
-> 참고: `structured_reviews.jsonl`(5축 구조화본, 커밋 `599677d`, 2026-07-30)은 별도 파생 파일이며 `seed_data.py`가 읽지 않는다 — `reviews.created_at`과는 무관, ML 파이프라인 입력으로만 쓰인다.
+> 참고: `structured_reviews.jsonl`(5축 구조화본, 커밋 `599677d`, 2026-07-30)은 별도 파생 파일이며 `seed.py`가 읽지 않는다 — `reviews.created_at`과는 무관, ML 파이프라인 입력으로만 쓰인다.
 
 > **프론트엔드 변경 불필요**: `Review.createdAt` 표시는 이미 `ReviewCard.tsx`/`ReviewDetailPage.tsx`에 구현되어 있다(`new Date(review.createdAt).toLocaleDateString('ko-KR')`). 이 STEP은 화면에 새 UI를 추가하는 게 아니라, 이미 있는 화면에 들어갈 **값을 바로잡는** 작업이다.
 
@@ -192,14 +195,14 @@ alembic upgrade head
 # reviews.is_processed 컬럼 확인
 # recommendation_events 테이블 생성 확인
 
-uv run python scripts/seed_data.py
+uv run python scripts/seed.py
 # reviews.created_at이 2026-07-26 23:28:11+09로, is_processed가 TRUE로 찍히는지 확인
 ```
 
 **체크리스트**
 ```
 [ ] 0-1: reviews.is_processed 컬럼 마이그레이션 작성 + 실행 (+ 모델에 컬럼 추가)
-[ ] 0-1b: seed_data.py가 LLM 리뷰 created_at을 커밋 시각으로 명시 설정하도록 수정 + backfill SQL 실행
+[ ] 0-1b: seed.py가 LLM 리뷰 created_at을 커밋 시각으로 명시 설정하도록 수정 + backfill SQL 실행 (seed_data.py는 삭제, seed.py로 통합)
 [ ] 0-2: recommendation_events 테이블 마이그레이션 작성 + 실행 (UUID/String FK 타입 확인)
 [ ] 0-3: SQLAlchemy 모델 파일 추가 (backend/app/models/recommendation_event.py)
 [ ] 0-4: alembic upgrade head + 시드 재실행 로컬 확인
@@ -1450,7 +1453,7 @@ EC2에서 실제 시간 측정 후 조정.
 K8s Secret으로 관리하고 CronJob Pod에만 환경변수로 주입.
 
 **is_processed / created_at 초기값**  
-기존 LLM 생성 리뷰 440건의 `is_processed=TRUE`, `created_at=2026-07-26 23:28:11+09`(커밋 시각) 설정은 마이그레이션이 아니라 **`backend/scripts/seed_data.py` 자체에서 명시적으로** 처리한다(STEP 0-1b 참고) — 이미 잘못 적재된 행이 있다면 그 섹션의 backfill SQL을 1회 실행.
+기존 LLM 생성 리뷰 440건의 `is_processed=TRUE`, `created_at=2026-07-26 23:28:11+09`(커밋 시각) 설정은 마이그레이션이 아니라 **`backend/scripts/seed.py`(정본) 자체에서 명시적으로** 처리한다(STEP 0-1b 참고) — 이미 잘못 적재된 행이 있다면 그 섹션의 backfill SQL을 1회 실행. `seed_data.py`는 동일 역할의 중복 스크립트였으나 `book_aspects`를 채우지 않고 관리 포인트가 두 개로 나뉘는 문제가 있어 삭제하고 `seed.py`로 통합했다.
 
 ---
 
@@ -1462,8 +1465,8 @@ STEP 0부터 순서대로 구현에 착수하기 전, 이 문서(작성 시점 �
 
 **원래 전제**: STEP 0이 `created_at`/`is_processed` 두 컬럼을 함께 새로 추가한다고 되어 있었음.
 **실제**: `created_at`은 `0001_initial_schema` 마이그레이션에 이미 있다. 없는 건 `is_processed` 하나뿐.
-**진짜 문제**: 컬럼이 아니라 값 — `seed_data.py`가 440건의 LLM 리뷰를 넣을 때 `created_at`을 지정하지 않아 전부 "시드 스크립트 실행 시각"으로 찍힌다.
-**상태**: 문서 정정 완료(STEP 0-1, 0-1b). `llm_reviews.jsonl` 최초 커밋 시각(`1c96df5`, 2026-07-26 23:28:11+09)으로 명시 설정하도록 시드 스크립트 수정 지시를 추가. 실제 코드 수정은 STEP 0 구현 시 진행.
+**진짜 문제**: 컬럼이 아니라 값 — 시딩 스크립트가 440건의 LLM 리뷰를 넣을 때 `created_at`을 지정하지 않으면 전부 "시드 스크립트 실행 시각"으로 찍힌다.
+**상태**: 문서 정정 및 실제 코드 수정 완료(STEP 0-1, 0-1b). `llm_reviews.jsonl` 최초 커밋 시각(`1c96df5`, 2026-07-26 23:28:11+09)으로 명시 설정하도록 `seed.py`(정본)를 수정. STEP 0 실제 구현 과정에서 같은 역할을 하는 스크립트가 `seed_data.py`/`seed.py` 둘로 갈라져 있었고 이 중 `seed_data.py`만 이 값을 정확히 세팅하고 있던 것을 발견 — `seed.py`로 통합하며 이 로직을 이식하고 `seed_data.py`는 삭제했다(자세한 내용은 STEP 0-1b 정정 노트 참고).
 
 ### B. 프론트엔드는 이미 리뷰 작성일 · XAI 설명을 표시하고 있음
 

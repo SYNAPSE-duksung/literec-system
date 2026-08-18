@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -24,5 +25,10 @@ def log_event(
             rank=payload.rank,
         )
     )
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # book_id(isbn)가 books 테이블에 없는 경우 등 FK 위반 — 5xx 대신 명확한 4xx로 응답.
+        db.rollback()
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "존재하지 않는 책입니다.")
     return {"status": "ok"}

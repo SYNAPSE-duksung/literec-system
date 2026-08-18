@@ -10,7 +10,7 @@ from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ML.pipeline import aspect_based_model as abm
 from ML.pipeline import xai
@@ -22,7 +22,9 @@ ADMIN_SECRET = os.getenv("ADMIN_SECRET", "change-me")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     abm.ensure_catalog_loaded()
-    abm.ensure_profiles_loaded()  # eval_users.json (오프라인 평가용 팀원 4명) — 실제 유저는 /profile/build로 추가됨
+    # eval_users.json(오프라인 평가용 팀원 4명) + DATABASE_URL의 실제 온보딩 유저를 함께 로드.
+    # 이후 신규 온보딩/재설정은 /profile/build가 같은 캐시를 in-place로 갱신한다.
+    abm.ensure_profiles_loaded()
     yield
 
 
@@ -40,7 +42,7 @@ def health() -> dict:
 
 class RecommendRequest(BaseModel):
     user_id: str
-    k: int = 10
+    k: int = Field(default=10, ge=1, le=50)
 
 
 class RecommendedBookOut(BaseModel):

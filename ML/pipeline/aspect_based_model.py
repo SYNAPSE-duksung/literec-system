@@ -26,6 +26,7 @@ Phase 3~6 단위 테스트/데모용으로 남겨두고, 최종 조립에서는 
 from __future__ import annotations
 
 import json
+import os
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -46,6 +47,11 @@ STRUCTURED_REVIEWS_PATH = DATA_PROCESSED_DIR / "structured_reviews.jsonl"
 DEFAULT_USER_RECORDS_PATH = (
     Path(__file__).parent.parent / "eval" / "eval_data" / "eval_users.json"
 )
+
+# 백엔드와 동일한 로컬 개발 기본값(backend/app/config.py의 database_url 기본값과 동일) —
+# ops가 두 서비스에 같은 DATABASE_URL 값을 그대로 재사용할 수 있도록 SQLAlchemy 스타일
+# ("postgresql+psycopg://...") 표기를 기본값으로 두고, psycopg에 넘기기 전에 정규화한다.
+DEFAULT_DATABASE_URL = "postgresql+psycopg://literec:literec@localhost:5432/literec"
 
 
 @dataclass
@@ -107,9 +113,70 @@ def build_catalog() -> dict[str, list[np.ndarray]]:
 def build_user_profile_index(
     path: Path = DEFAULT_USER_RECORDS_PATH,
 ) -> dict[str, UserProfileVectors]:
+    """`ML/eval/tune_lambda.py` 등 오프라인 평가 스크립트가 그대로 쓰는 시그니처 —
+    eval_users.json(팀원 4명)만 읽는다. DB 조회는 하지 않는다."""
     with open(path, encoding="utf-8") as f:
         users = json.load(f)
     return build_user_profiles(users)
+
+
+def _to_psycopg_dsn(database_url: str) -> str:
+    """SQLAlchemy 스타일 드라이버 접미사("postgresql+psycopg://...")를 psycopg가
+    바로 이해하는 plain "postgresql://..." 형태로 정규화한다."""
+    scheme, _, rest = database_url.partition("://")
+    return f"{scheme.split('+', 1)[0]}://{rest}" if "+" in scheme else database_url
+
+
+def load_db_users(database_url: str) -> list[dict]:
+    """백엔드 DB(users/user_profiles)에서 온보딩을 마친 실제 유저를
+    build_user_profiles()가 기대하는 스키마(userId/preferredEmotions/avoidedTraits)로
+    변환해 가져온다. DB에 연결할 수 없으면(로컬에서 DB 없이 띄운 경우 등) 조용히
+    빈 리스트를 반환한다 — ML 서버가 DB 없이도 기동은 되어야 한다."""
+    try:
+        import psycopg
+    except ImportError:
+        return []
+
+    try:
+        with psycopg.connect(_to_psycopg_dsn(database_url), connect_timeout=5) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT u.id, up.preferred_emotions, up.avoided_traits "
+                    "FROM user_profiles up JOIN users u ON u.id = up.user_id"
+                )
+                rows = cur.fetchall()
+    except Exception as exc:  # noqa: BLE001 — DB 미기동/네트워크 문제 등 어떤 이유든 기동을 막지 않음
+        print(f"[aspect_based_model] DB 유저 프로필 로드 실패, eval_users.json만 사용: {exc}")
+        return []
+
+    return [
+        {
+            "userId": str(user_id),
+            "preferredEmotions": preferred_emotions or [],
+            "avoidedTraits": avoided_traits or [],
+        }
+        for user_id, preferred_emotions, avoided_traits in rows
+    ]
+
+
+def build_full_profile_index(
+    eval_users_path: Path = DEFAULT_USER_RECORDS_PATH,
+    database_url: str | None = None,
+) -> dict[str, UserProfileVectors]:
+    """eval_users.json(오프라인 평가용) + 백엔드 DB의 실제 온보딩 유저를 합쳐 캐시를 만든다.
+
+    ML 서버 프로세스가 재시작되면 메모리 캐시(_user_profiles_cache)가 초기화되는데,
+    그동안 POST /profile/build로 등록됐던 실제 유저 프로필은 어디에도 영속화되지
+    않아 함께 사라진다 — 이미 온보딩을 마친 유저도 서버 재시작 직후엔 recommend()가
+    빈 리스트를 반환하는 문제가 있었다. 시작 시점에 백엔드 DB에서 다시 채워 넣어 방지한다.
+    """
+    profiles = build_user_profile_index(eval_users_path)
+
+    url = database_url or os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+    db_users = load_db_users(url)
+    if db_users:
+        profiles.update(build_user_profiles(db_users))
+    return profiles
 
 
 def ensure_catalog_loaded(force_rebuild: bool = False) -> CatalogBundle:
@@ -123,10 +190,11 @@ def ensure_catalog_loaded(force_rebuild: bool = False) -> CatalogBundle:
 
 
 def ensure_profiles_loaded(force_rebuild: bool = False) -> dict[str, UserProfileVectors]:
-    """ML/serving/main.py가 유저 프로필 캐시를 읽고 쓰는 유일한 통로."""
+    """ML/serving/main.py가 유저 프로필 캐시를 읽고 쓰는 유일한 통로.
+    eval_users.json + DB의 실제 온보딩 유저를 함께 로드한다(build_full_profile_index 참고)."""
     global _user_profiles_cache
     if _user_profiles_cache is None or force_rebuild:
-        _user_profiles_cache = build_user_profile_index()
+        _user_profiles_cache = build_full_profile_index()
     return _user_profiles_cache
 
 

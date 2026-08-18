@@ -21,4 +21,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "respx>=0.21",
 ]
