@@ -1,8 +1,10 @@
 import uuid
 
+import httpx
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models import BookReaction, ReviewReaction, User, UserProfile
 from app.schemas.book import BookReactionsOut
@@ -30,7 +32,7 @@ def get_profile(
 
 
 @router.patch("/profile", response_model=UserProfileOut)
-def update_profile(
+async def update_profile(
     payload: UserProfileUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -51,6 +53,24 @@ def update_profile(
 
     db.commit()
     db.refresh(profile)
+
+    # ML 서버에 병합된 전체 프로필을 등록(온보딩·마이페이지 재설정 공용 — 부분 PATCH여도
+    # 항상 DB에 최종 저장된 전체 값을 보낸다, 안 그러면 안 보낸 필드가 빈 배열로 ML에
+    # 전달되어 기존 선호 신호가 사라진다). 실패해도 프로필 저장 자체는 성공 처리한다.
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                f"{settings.ml_server_url}/profile/build",
+                json={
+                    "user_id": str(current_user.id),
+                    "preferred_emotions": profile.preferred_emotions,
+                    "avoided_traits": profile.avoided_traits,
+                },
+                timeout=10.0,
+            )
+    except httpx.HTTPError:
+        pass
+
     return _profile_out(current_user.id, profile)
 
 

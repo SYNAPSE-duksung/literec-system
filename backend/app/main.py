@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.routers import auth, books, recommendations, reviews, users
+from app.routers import auth, books, events, recommendations, reviews, users
 
 app = FastAPI(title="LiteRec API")
 
@@ -19,6 +19,7 @@ app.include_router(users.router)
 app.include_router(books.router)
 app.include_router(reviews.router)
 app.include_router(recommendations.router)
+app.include_router(events.router)
 
 
 @app.get("/api/health")

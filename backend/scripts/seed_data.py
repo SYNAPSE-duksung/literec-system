@@ -6,18 +6,30 @@
 """
 
 import json
+import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+# `python scripts/seed_data.py`로 실행하면 sys.path[0]이 scripts/ 디렉터리가 되어
+# app 패키지(backend/app/)를 못 찾는다 — backend/ 를 명시적으로 추가해준다.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.db import SessionLocal
-from app.models import Book, Review, User
+from app.models import Book, Review, ReviewReaction, User
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 BOOKS_FILE = DATA_DIR / "books_naver.jsonl"
 REVIEWS_FILE = DATA_DIR / "llm_reviews.jsonl"
 
 LLM_BOT_NAME = "결-bot"
+
+# llm_reviews.jsonl 자체엔 작성 시각이 없어, 이 파일이 최초로 커밋된 시각(커밋 1c96df5,
+# 2026-07-26 23:28:11 +09:00)을 대신 쓴다. server_default=now()에 맡기면 재시딩할 때마다
+# "시드 실행 시각"으로 찍혀 440건이 전부 같은 순간에 작성된 것처럼 보이는 문제가 있었다.
+KST = timezone(timedelta(hours=9))
+LLM_REVIEWS_SEED_CREATED_AT = datetime(2026, 7, 26, 23, 28, 11, tzinfo=KST)
 
 
 def load_jsonl(path: Path) -> list[dict]:
@@ -60,6 +72,17 @@ def get_or_create_llm_bot(db) -> User:
 def seed_reviews(db) -> int:
     rows = load_jsonl(REVIEWS_FILE)
     bot = get_or_create_llm_bot(db)
+
+    # LLM 리뷰를 통째로 지웠다가 다시 넣기 전에, 그 리뷰들을 참조하는 반응(좋아요/싫어요)부터
+    # 지워야 한다 — 안 그러면 review_reactions FK 제약 위반으로 재시딩이 실패한다
+    # (실사용자가 게시판에서 LLM 리뷰에 반응 하나만 남겨도 다음 재시딩이 깨짐).
+    llm_review_ids = [
+        r.id for r in db.query(Review).filter(Review.source == "llm_generated").all()
+    ]
+    if llm_review_ids:
+        db.query(ReviewReaction).filter(ReviewReaction.review_id.in_(llm_review_ids)).delete(
+            synchronize_session=False
+        )
     db.query(Review).filter(Review.source == "llm_generated").delete()
     for row in rows:
         db.add(
@@ -69,6 +92,8 @@ def seed_reviews(db) -> int:
                 source="llm_generated",
                 persona=row.get("persona"),
                 content=row["content"],
+                created_at=LLM_REVIEWS_SEED_CREATED_AT,
+                is_processed=True,
             )
         )
     db.commit()
