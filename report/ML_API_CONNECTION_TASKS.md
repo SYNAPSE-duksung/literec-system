@@ -762,6 +762,12 @@ const handleBookClick = (book: Book, rank: number) => {
 
 ### STEP 3 — 로컬 통합 테스트 (docker-compose)
 
+> **정정(2026-08-19)**: 원안을 그대로 적용하면 3곳이 깨진다 — 자세한 이유는 [정합성 점검 결과 G](#g-step-3-docker-composeml-서비스-원안이-실제로-깨지는-3곳) 참고.
+> 1. `DATABASE_URL` 미지정 — `aspect_based_model.py`의 `DEFAULT_DATABASE_URL`이 `localhost:5432`라 컨테이너 안에서 DB를 못 찾는다. 에러 없이 조용히 빈 리스트로 폴백돼(`load_db_users()`), "이미 온보딩한 실제 유저인데 재기동 후 추천이 빈 상태"인 이전에 고친 버그가 docker-compose 환경에서만 재발한다.
+> 2. `./ML:/app/ML` 통째 바인드마운트 — 호스트에 이미 `ML/.venv`(Windows용)가 있어 그대로 덮으면 `backend`가 겪었던 것과 같은 venv 충돌이 재발한다. `.venv`만 별도 named volume으로 분리해야 한다.
+> 3. 헬스체크 없음 — 카탈로그 빌드(모델 로드 + 리뷰 440건 임베딩 + 클러스터링)에 몇 십 초가 걸리는데, `backend`가 `ml`을 기다리지 않으면 첫 기동 시 `GET /api/recommendations`가 일시적으로 503을 낸다.
+> (부가) HuggingFace 모델(`jhgan/ko-sroberta-multitask`, ~400MB) 캐시 볼륨도 추가해 컨테이너를 새로 만들 때마다 재다운로드하지 않게 한다.
+
 **3-1. `docker-compose.yml` ml 서비스 추가**
 
 ```yaml
@@ -775,11 +781,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ML_SERVER_URL=http://ml:8001
-      - ADMIN_SECRET=change-me
+      ML_SERVER_URL: http://ml:8001
     depends_on:
-      - db
-      - ml
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
 
   ml:
     build:
@@ -788,41 +795,68 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - ADMIN_SECRET=change-me
+      # backend와 동일하게 db 서비스를 명시로 가리켜야 한다 — 기본값(localhost)은
+      # 컨테이너 안에서 연결에 실패해 "빈 리스트로 조용히 폴백"된다(에러 없음).
+      DATABASE_URL: postgresql+psycopg://literec:literec@db:5432/literec
+      ADMIN_SECRET: change-me
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./ML:/app/ML
-      - ./data/processed:/app/data/processed
+      # 호스트(Windows)의 .venv가 컨테이너(Linux)를 가리는 문제 방지 —
+      # backend_venv와 동일한 패턴.
+      - ml_venv:/app/ML/.venv
+      - ./data/processed:/app/data/processed:ro
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      # catalog_loaded/profiles_loaded가 둘 다 true가 될 때까지 backend가 기다리게 한다.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; d=json.loads(urllib.request.urlopen('http://localhost:8001/health').read()); sys.exit(0 if d.get('catalog_loaded') and d.get('profiles_loaded') else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+volumes:
+  ml_venv:
+  hf_cache:
 ```
 
 **3-2. 통합 테스트 확인 항목**
 
 ```bash
-docker-compose up
+docker compose up --build
 
-# 1. ML 서버 카탈로그 빌드 완료 확인 (로그에서 확인)
+# 1. ml 서비스가 healthy가 될 때까지 대기 (docker compose ps)
 # 2. 헬스체크
 curl localhost:8001/health
-# → {"catalog_loaded": true, "profiles_loaded": true}
+# → {"status":"ok","catalog_loaded": true, "profiles_loaded": true}
 
 # 3. 온보딩 → 추천 흐름
 # (1) 회원가입 + 로그인
 # (2) 온보딩 완료 → ML 서버 /profile/build 호출 확인
 # (3) GET /api/recommendations → 실제 책 데이터 반환 확인
+# (4) 기존에 온보딩을 마친 계정으로도 확인 — ml 컨테이너를 재기동해도
+#     DATABASE_URL 덕분에 추천이 빈 배열로 떨어지지 않는지가 핵심 검증 포인트
 
-# 4. 이벤트 로깅
+# 4. 이벤트 로깅 — book_id는 정수가 아니라 books.isbn(문자열)
 curl -X POST localhost:8000/api/events \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"book_id": 1, "event_type": "click", "source": "home", "rank": 1}'
+  -d '{"book_id": "9788937460449", "event_type": "click", "source": "home", "rank": 1}'
 # DB recommendation_events 테이블에 행 추가 확인
 ```
 
 **체크리스트**
 ```
-[ ] 3-1: docker-compose.yml ml 서비스 추가
-[ ] 3-2: docker-compose up 후 전체 흐름 확인
-         ├── health 정상
-         ├── 온보딩 → 추천 결과 반환
+[ ] 3-1: docker-compose.yml ml 서비스 추가 (DATABASE_URL/venv 볼륨/헬스체크 포함)
+[ ] 3-2: docker compose up --build 후 전체 흐름 확인
+         ├── ml healthy, health 정상
+         ├── 온보딩 → 추천 결과 반환 (재기동 후에도 유지)
          └── 이벤트 로깅 DB 적재 확인
 ```
 
@@ -1507,3 +1541,14 @@ STEP 0부터 순서대로 구현에 착수하기 전, 이 문서(작성 시점 �
 - **`Book.identityVectors`(레이더 차트) ↔ `book_aspects` 매핑**: `LiteRec_Backend_ClaudeCode_Brief.md` 9.1에 이미 "미확정, 별도 논의 필요"로 기록되어 있고 추천 파이프라인과 무관 — 손대지 않음.
 - **STEP 8 온라인 임베딩 파이프라인의 5축 구조화 공백**: 구조화 로직 자체(`data/src/llm_review/structure_reviews.py`의 `build_structure_prompt()` + Upstage Solar API 호출)는 이미 있고 초기 440건이 이걸로 만들어졌지만, 사람이 CLI로 수동 실행하는 오프라인 배치 스크립트일 뿐이다. 실사용자가 게시판에 새로 쓰는 리뷰를 같은 5축으로 **자동** 구조화해서 DB/버퍼에 채우는 경로는 어디에도 없다. STEP 8 착수 전 이 로직을 리뷰 1건 단위로 재사용하는 별도 설계 필요 — 이번 정정에서는 코드 스니펫에 TODO만 남겨둠.
 - **`matchedTrait`/`hookLine` 필드의 실제 의미**: `UI_DESIGN_SPEC.md` 5.1 타입에는 있지만 어느 화면에서도 렌더링되지 않는 죽은 필드(확인: `HomePage.tsx`는 `explanation`만 사용). STEP 1-3에서 ML 5축 라벨을 `RADAR_TRAITS` 어휘로 잠정 매핑해 채워 넣었지만, 실제로 화면에 노출하게 되면 매핑을 다시 설계해야 한다.
+
+### G. STEP 3 docker-compose `ml` 서비스 원안이 실제로 깨지는 3곳
+
+STEP 0~2 구현이 끝난 뒤 실제 `docker-compose.yml`/`aspect_based_model.py`/`ML/serving/Dockerfile`을 대조해서 발견했다.
+
+1. **`DATABASE_URL` 누락**: `ensure_profiles_loaded()` → `build_full_profile_index()`(`aspect_based_model.py:162-179`)가 기동 시 백엔드 DB에서 실제 온보딩 유저를 읽어오는데, 기본값 `DEFAULT_DATABASE_URL`이 `localhost:5432`다. 원안의 `ml` 서비스 블록엔 `DATABASE_URL`이 없어 컨테이너 안에서 연결에 실패한다. `load_db_users()`가 이 실패를 `except Exception`으로 조용히 삼키고 빈 리스트를 반환하도록 설계돼 있어(ML 서버가 DB 없이도 기동은 되게 하려는 의도) 에러 로그 외엔 티가 안 나고, "이미 온보딩한 실제 유저가 재기동 후 추천이 안 뜨는" 이전에 로컬에서 고쳤던 문제가 docker-compose 환경에서만 재발한다. `backend`와 동일하게 `db` 서비스를 명시로 가리키도록 고쳤다.
+2. **`.venv` 바인드마운트 충돌**: 원안은 `./ML:/app/ML`을 통째로 마운트한다. 호스트에 이미 Windows용 `ML/.venv`가 있어(`ls`로 확인) 그대로 덮으면 `backend`가 `backend_venv:/app/.venv`로 이미 회피한 것과 동일한 Windows/Linux venv 충돌이 재발한다. `ml_venv:/app/ML/.venv` named volume으로 분리했다(`ML/serving/Dockerfile`이 `cd ML && uv sync`라 venv 위치가 `/app/ML/.venv`).
+3. **헬스체크 없음**: 카탈로그 빌드(`jhgan/ko-sroberta-multitask` 모델 로드 + 리뷰 440건 임베딩 + 클러스터링)에 몇 십 초가 걸린다. `backend`의 `depends_on: db: condition: service_healthy`와 동일한 패턴을 `ml`에도 추가했다 — 이미지에 `curl`이 없어(`python:3.12-slim`) 파이썬으로 `/health`의 `catalog_loaded`/`profiles_loaded`를 직접 확인하는 헬스체크를 썼다.
+
+부가로 HuggingFace 모델(~400MB) 캐시가 없으면 `docker compose up --build` 때마다 재다운로드하므로 `hf_cache` named volume을 추가했다. 문서 STEP 3의 curl 예시도 `book_id`를 정수로 쓰고 있었는데 실제로는 `books.isbn`(문자열)이라 예시를 고쳤다(패턴은 C 항목과 동일).
+**상태**: STEP 3 문서 정정 및 `docker-compose.yml` 반영 완료.
