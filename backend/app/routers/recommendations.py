@@ -1,4 +1,3 @@
-import random
 import uuid
 
 import httpx
@@ -7,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Book, Review, User
+from app.models import Review, User
 from app.schemas.recommendation import RecommendationOut, SimilarReviewRecommendationOut
 from app.security import get_current_user
 from app.services import book_service
@@ -60,27 +59,60 @@ async def get_recommendations(
 
 
 @router.get("/reviews/{review_id}/similar-books", response_model=list[SimilarReviewRecommendationOut])
-def get_similar_books_for_review(
+async def get_similar_books_for_review(
     review_id: uuid.UUID,
     n: int = Query(default=3, ge=1, le=20),
     db: Session = Depends(get_db),
 ) -> list[SimilarReviewRecommendationOut]:
-    """리뷰 상세의 '유사 리뷰 기반 책 추천' 더미 구현.
+    """리뷰 상세의 '유사 리뷰 기반 책 추천' — ML 서버(/similar-books)를 호출해
+    이 리뷰와 결이 비슷한 책을 찾는다. UI_DESIGN_SPEC.md §6.8 규칙대로 원 리뷰가
+    속한 도서(isbn)는 결과에서 제외한다(ML 쪽에서 exclude_book_id로 처리).
 
-    완전 랜덤이며, UI_DESIGN_SPEC.md §6.8 규칙대로 원 리뷰가 속한 도서(isbn)는 결과에서 제외한다.
+    이 섹션은 화면의 보조 섹션이라(프론트가 isError를 소비하지 않음) ML 장애
+    시에도 원래 더미 구현과 같은 "절대 실패하지 않는" 계약을 유지한다 — 503 대신
+    빈 목록을 반환해 기존 빈 상태 문구("아직 비슷한 후기를 찾지 못했어요")로
+    자연스럽게 대체되게 한다.
     """
     review = db.get(Review, review_id)
     if review is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "리뷰를 찾을 수 없습니다.")
 
-    candidates = db.query(Book).filter(Book.isbn != review.isbn).all()
-    sample = random.sample(candidates, k=min(n, len(candidates)))
-    return [
-        SimilarReviewRecommendationOut(
-            sourceReviewId=str(review_id),
-            bookId=book.isbn,
-            matchedReviewSnippet=f"'{book.title}'에 대한 다른 독자의 리뷰가 비슷한 정서를 담고 있어요. (더미)",
-            similarityReason="정서 키워드가 비슷해요 (더미 — ML 연동 전 임시 로직)",
-        )
-        for book in sample
-    ]
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(
+                f"{settings.ml_server_url}/similar-books",
+                json={
+                    "isbn": review.isbn,
+                    "emotion_tags": review.emotion_tags,
+                    "liked_points": review.liked_points,
+                    "disliked_points": review.disliked_points,
+                    "content": review.content,
+                    "k": n,
+                },
+                timeout=10.0,
+            )
+            resp.raise_for_status()
+            similar = resp.json()  # [{book_id, snippet, reason}, ...]
+        except httpx.HTTPError:
+            return []
+        except (ValueError, KeyError, TypeError):
+            return []
+
+    books_by_isbn = {
+        b.isbn: b
+        for b in book_service.get_books_by_isbn(db, [item["book_id"] for item in similar])
+    }
+
+    try:
+        return [
+            SimilarReviewRecommendationOut(
+                sourceReviewId=str(review_id),
+                bookId=item["book_id"],
+                matchedReviewSnippet=item["snippet"],
+                similarityReason=item["reason"],
+            )
+            for item in similar
+            if item["book_id"] in books_by_isbn
+        ]
+    except (KeyError, TypeError):
+        return []

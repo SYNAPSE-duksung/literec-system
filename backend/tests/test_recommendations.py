@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import respx
 
@@ -7,6 +9,7 @@ from app.models import Book, Review
 SIGNUP_PAYLOAD = {"email": "rec@example.com", "password": "password123", "name": "추천"}
 
 ML_RECOMMEND_URL = f"{settings.ml_server_url}/recommend"
+ML_SIMILAR_BOOKS_URL = f"{settings.ml_server_url}/similar-books"
 
 
 def _create_book(db_session, isbn: str) -> Book:
@@ -39,6 +42,26 @@ def _ml_item(isbn: str) -> dict:
         "matched_trait": "잔잔함",
         "explanation": "테스트 설명",
     }
+
+
+def _similar_item(isbn: str) -> dict:
+    return {"book_id": isbn, "snippet": "테스트 인용문", "reason": "테스트 이유"}
+
+
+def _create_review_for(db_session, book, **overrides) -> Review:
+    fields = {
+        "isbn": book.isbn,
+        "user_id": None,
+        "source": "llm_generated",
+        "persona": "테스트 페르소나",
+        "content": "테스트 리뷰",
+        **overrides,
+    }
+    review = Review(**fields)
+    db_session.add(review)
+    db_session.commit()
+    db_session.refresh(review)
+    return review
 
 
 @respx.mock
@@ -135,21 +158,18 @@ def test_recommendations_requires_auth(client):
     assert res.status_code == 401
 
 
+@respx.mock
 def test_similar_books_excludes_source_book(client, db_session):
     source_book = _create_book(db_session, "9780000000040")
-    _create_book(db_session, "9780000000041")
-    _create_book(db_session, "9780000000042")
+    other_a = _create_book(db_session, "9780000000041")
+    other_b = _create_book(db_session, "9780000000042")
+    review = _create_review_for(db_session, source_book)
 
-    review = Review(
-        isbn=source_book.isbn,
-        user_id=None,
-        source="llm_generated",
-        persona="테스트 페르소나",
-        content="테스트 리뷰",
+    respx.post(ML_SIMILAR_BOOKS_URL).mock(
+        return_value=httpx.Response(
+            200, json=[_similar_item(other_a.isbn), _similar_item(other_b.isbn)]
+        )
     )
-    db_session.add(review)
-    db_session.commit()
-    db_session.refresh(review)
 
     res = client.get(f"/api/reviews/{review.id}/similar-books", params={"n": 5})
     assert res.status_code == 200
@@ -157,8 +177,68 @@ def test_similar_books_excludes_source_book(client, db_session):
     assert len(body) == 2
     assert source_book.isbn not in {item["bookId"] for item in body}
     assert all(item["sourceReviewId"] == str(review.id) for item in body)
+    assert all(item["matchedReviewSnippet"] == "테스트 인용문" for item in body)
+    assert all(item["similarityReason"] == "테스트 이유" for item in body)
 
 
 def test_similar_books_unknown_review_returns_404(client):
     res = client.get("/api/reviews/00000000-0000-0000-0000-000000000000/similar-books")
     assert res.status_code == 404
+
+
+@respx.mock
+def test_similar_books_ml_server_down_returns_empty_list(client, db_session):
+    source_book = _create_book(db_session, "9780000000050")
+    review = _create_review_for(db_session, source_book)
+
+    respx.post(ML_SIMILAR_BOOKS_URL).mock(side_effect=httpx.ConnectError("connection refused"))
+
+    res = client.get(f"/api/reviews/{review.id}/similar-books")
+    # /recommendations와 달리 이 섹션은 보조 섹션이라 503이 아니라 빈 목록으로
+    # 조용히 대체된다(프론트가 isError를 소비하지 않아 UX 차이도 없음).
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+@respx.mock
+def test_similar_books_malformed_ml_response_returns_empty_list(client, db_session):
+    source_book = _create_book(db_session, "9780000000051")
+    target_book = _create_book(db_session, "9780000000052")
+    review = _create_review_for(db_session, source_book)
+
+    # 필수 필드(snippet/reason)가 빠진 스키마 드리프트 상황
+    respx.post(ML_SIMILAR_BOOKS_URL).mock(
+        return_value=httpx.Response(200, json=[{"book_id": target_book.isbn}])
+    )
+
+    res = client.get(f"/api/reviews/{review.id}/similar-books")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+@respx.mock
+def test_similar_books_sends_review_fields_to_ml(client, db_session):
+    source_book = _create_book(db_session, "9780000000053")
+    review = _create_review_for(
+        db_session,
+        source_book,
+        emotion_tags=["위로", "담백함"],
+        liked_points=["문장이 좋았어요"],
+        disliked_points=["전개가 느렸어요"],
+        content="테스트 본문",
+    )
+
+    route = respx.post(ML_SIMILAR_BOOKS_URL).mock(return_value=httpx.Response(200, json=[]))
+
+    client.get(f"/api/reviews/{review.id}/similar-books", params={"n": 7})
+
+    sent_body = route.calls.last.request.content
+    payload = json.loads(sent_body)
+    assert payload == {
+        "isbn": source_book.isbn,
+        "emotion_tags": ["위로", "담백함"],
+        "liked_points": ["문장이 좋았어요"],
+        "disliked_points": ["전개가 느렸어요"],
+        "content": "테스트 본문",
+        "k": 7,
+    }
