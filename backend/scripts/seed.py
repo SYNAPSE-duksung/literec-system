@@ -28,6 +28,7 @@ from app.models import Book, BookAspect, Review, User  # noqa: E402
 DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 BOOKS_FILE = DATA_DIR / "books_naver.jsonl"
 REVIEWS_FILE = DATA_DIR / "llm_reviews.jsonl"
+REAL_REVIEWS_FILE = DATA_DIR / "real_reviews.jsonl"
 
 # llm_reviews.jsonl에는 자연 유니크 키가 없어, 재실행해도 같은 id가 나오도록
 # 고정된 네임스페이스로 uuid5를 생성한다(리뷰 upsert 키로 사용).
@@ -37,6 +38,9 @@ LLM_BOT_NAME = "결-bot"
 
 KST = timezone(timedelta(hours=9))
 LLM_REVIEWS_SEED_CREATED_AT = datetime(2026, 7, 26, 23, 28, 11, tzinfo=KST)
+# real_reviews.jsonl 최초 커밋 시각(커밋 0215ef8, 2026-08-23 22:28:23 +09:00) — LLM_REVIEWS와
+# 동일한 이유로 재시딩할 때마다 "시드 실행 시각"이 찍히는 걸 막기 위해 고정한다.
+REAL_REVIEWS_SEED_CREATED_AT = datetime(2026, 8, 23, 22, 28, 23, tzinfo=KST)
 
 SECTION_HEADER_RE = re.compile(r"^##\s*(\d+)\.", re.MULTILINE)
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*\)")
@@ -179,15 +183,51 @@ def seed_reviews(db: Session) -> int:
     return len(records)
 
 
+def seed_real_reviews(db: Session) -> int:
+    """구글폼으로 수집한 실제 독자 리뷰(real_reviews.jsonl)를 reviews에 upsert한다.
+    is_processed는 일부러 False로 두고 upsert 시에도 갱신하지 않는다 — 아직 5축으로
+    구조화된 적이 없으니 structure-reviews CronJob이 나중에 실제로 처리하게 하기 위함
+    (재시딩 때마다 False로 되돌아가 이미 처리된 리뷰까지 Upstage로 재구조화되는 것 방지)."""
+    records = _read_jsonl(REAL_REVIEWS_FILE)
+
+    for row in records:
+        review_id = uuid.uuid5(SEED_REVIEW_NAMESPACE, f"real:{row['isbn']}:{row['review_index']}")
+        stmt = pg_insert(Review).values(
+            id=review_id,
+            isbn=row["isbn"],
+            user_id=None,
+            source="user",
+            content=row["content"],
+            emotion_tags=[],
+            liked_points=[],
+            disliked_points=[],
+            created_at=REAL_REVIEWS_SEED_CREATED_AT,
+            is_processed=False,
+        )
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[Review.id],
+            set_={
+                "content": stmt.excluded.content,
+                "created_at": stmt.excluded.created_at,
+            },
+        )
+        db.execute(stmt)
+
+    db.commit()
+    return len(records)
+
+
 def main() -> None:
     db = SessionLocal()
     try:
         book_count = seed_books(db)
         review_count = seed_reviews(db)
+        real_review_count = seed_real_reviews(db)
     finally:
         db.close()
     print(f"books + book_aspects upserted: {book_count}")
     print(f"reviews upserted: {review_count}")
+    print(f"real reviews upserted: {real_review_count}")
 
 
 if __name__ == "__main__":
