@@ -1,0 +1,63 @@
+# j2nii는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: j2nii/literec-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        # postgres-secret의 database-url 키는 SQLAlchemy 스타일 전체 접속 문자열
+        # (postgresql+psycopg://literec:<password>@postgres.data.svc.cluster.local:5432/literec)을
+        # 그대로 담고 있다 — backend/app/config.py의 database_url 기본 형식과 동일.
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: database-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: value
+        - name: ADMIN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: admin-secret
+              key: value
+        - name: ML_SERVER_URL
+          value: "http://ml-server.ml.svc.cluster.local:8001"
+        # 배포된 프론트가 실제로 접속하는 origin으로 바꿔야 CORS가 통과한다.
+        # 예: EC2 퍼블릭 IP를 쓰면 '["http://<EC2-Public-IP>"]', 도메인을 붙였다면 그 origin.
+        - name: CORS_ORIGINS
+          value: '["http://13.125.219.163"]'
+        readinessProbe:
+          httpGet:
+            path: /docs
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: backend
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 8000
