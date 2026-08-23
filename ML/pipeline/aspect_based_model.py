@@ -80,6 +80,9 @@ def build_catalog_bundle() -> CatalogBundle:
     실행해, recommend()용 벡터와 explain용 클러스터링 산출물을 함께 만든다.
     """
     reviews = _load_structured_reviews()
+    # 정적 시드(440건) + DB에 쌓인 신규 구조화 리뷰(review_axes, STEP8 CronJob이 채움)를 합친다.
+    # review_id 형식이 서로 달라(jsonl: "{isbn}_{review_index}" / DB: UUID) 충돌 위험 없음.
+    reviews = reviews + load_db_structured_reviews(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
     reviews_by_id = {r["review_id"]: r for r in reviews}
     review_ids = [r["review_id"] for r in reviews]
     book_ids = [r["book_id"] for r in reviews]
@@ -156,6 +159,42 @@ def load_db_users(database_url: str) -> list[dict]:
             "avoidedTraits": avoided_traits or [],
         }
         for user_id, preferred_emotions, avoided_traits in rows
+    ]
+
+
+def load_db_structured_reviews(database_url: str) -> list[dict]:
+    """review_axes(STEP8 CronJob이 채우는 5축 구조화 결과)를 _load_structured_reviews()와
+    동일한 shape(book_id/review_id/5축 Korean 키)으로 변환해 가져온다. load_db_users()와
+    동일하게 DB에 연결할 수 없으면 조용히 빈 리스트를 반환한다 — 카탈로그 빌드를 막지 않음."""
+    try:
+        import psycopg
+    except ImportError:
+        return []
+
+    try:
+        with psycopg.connect(_to_psycopg_dsn(database_url), connect_timeout=5) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT r.id, r.isbn, a.emotion_experience, a.liked_elements, "
+                    "a.disliked_elements, a.themes, a.reading_context "
+                    "FROM review_axes a JOIN reviews r ON r.id = a.review_id"
+                )
+                rows = cur.fetchall()
+    except Exception as exc:  # noqa: BLE001 — DB 미기동/네트워크 문제 등 어떤 이유든 기동을 막지 않음
+        print(f"[aspect_based_model] DB 구조화 리뷰 로드 실패, 정적 시드만 사용: {exc}")
+        return []
+
+    return [
+        {
+            "book_id": isbn,
+            "review_id": str(review_id),
+            "정서_경험": emotion_experience,
+            "좋았던_요소": liked_elements,
+            "별로였던_요소": disliked_elements,
+            "소재_및_주제": themes,
+            "독서_경험_맥락": reading_context,
+        }
+        for review_id, isbn, emotion_experience, liked_elements, disliked_elements, themes, reading_context in rows
     ]
 
 
