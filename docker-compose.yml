@@ -20,24 +20,62 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql+psycopg://literec:literec@db:5432/literec
-      # STEP 3(docker-compose에 ml 서비스 추가)는 아직 안 해서, 로컬에서 직접 띄운
-      # ML 서버(호스트의 8001)를 바라보도록 임시로 지정한다 — host.docker.internal이
-      # Docker Desktop에서 호스트 머신을 가리킨다.
-      ML_SERVER_URL: http://host.docker.internal:8001
+      ML_SERVER_URL: http://ml:8001
     ports:
       - "8000:8000"
     depends_on:
       db:
+        condition: service_healthy
+      ml:
         condition: service_healthy
     volumes:
       - ./backend:/app
       # 호스트(Windows)의 .venv가 컨테이너(Linux)로 그대로 마운트되며 매번
       # venv를 재생성하는 문제를 막기 위해 .venv만 별도 named volume으로 분리한다.
       - backend_venv:/app/.venv
-      # scripts/seed_data.py가 컨테이너 루트 기준 /data/processed/*.jsonl을 읽는다
+      # scripts/seed.py가 컨테이너 루트 기준 /data/processed/*.jsonl을 읽는다
       # (Path(__file__).resolve().parents[2] == 컨테이너 루트) — 시드 원본 데이터를 읽기 전용으로 마운트.
       - ./data:/data:ro
+
+  ml:
+    build:
+      context: .
+      dockerfile: ML/serving/Dockerfile
+    environment:
+      # aspect_based_model.py의 DEFAULT_DATABASE_URL은 localhost:5432라 컨테이너 안에서는
+      # 연결에 실패한다(조용히 빈 리스트로 폴백돼 에러 없이 "온보딩 유저인데 추천이 빈
+      # 상태로 뜨는" 문제로만 드러난다) — backend와 동일하게 db 서비스를 명시로 가리킨다.
+      DATABASE_URL: postgresql+psycopg://literec:literec@db:5432/literec
+      ADMIN_SECRET: change-me
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./ML:/app/ML
+      # 호스트(Windows)의 ML/.venv가 컨테이너(Linux)를 가리는 문제를 막기 위해
+      # backend_venv와 동일한 패턴으로 .venv만 별도 named volume으로 분리한다.
+      - ml_venv:/app/ML/.venv
+      - ./data/processed:/app/data/processed:ro
+      # sentence-transformers 모델(jhgan/ko-sroberta-multitask, ~400MB)을 컨테이너를
+      # 새로 만들 때마다 다시 받지 않도록 HuggingFace 캐시를 named volume으로 유지한다.
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      # 카탈로그 빌드(모델 로드 + 리뷰 440건 임베딩 + 클러스터링)가 끝나 catalog_loaded/
+      # profiles_loaded가 둘 다 true가 될 때까지 backend가 기다리게 한다.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; d=json.loads(urllib.request.urlopen('http://localhost:8001/health').read()); sys.exit(0 if d.get('catalog_loaded') and d.get('profiles_loaded') else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
 
 volumes:
   db_data:
   backend_venv:
+  ml_venv:
+  hf_cache:

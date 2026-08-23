@@ -10,13 +10,15 @@ export function OnboardingPage({ onComplete }: { onComplete: () => void }) {
   const [step, setStep] = useState(1);
   const [preferredEmotions, setPreferredEmotions] = useState<string[]>([]);
   const [avoidedTraits, setAvoidedTraits] = useState<string[]>([]);
+  const [finishing, setFinishing] = useState(false);
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
   };
 
-  const handleFinish = () => {
-    updateProfile({ preferredEmotions, avoidedTraits });
+  const handleFinish = async () => {
+    setFinishing(true);
+    await updateProfile({ preferredEmotions, avoidedTraits });
     onComplete();
   };
 
@@ -61,7 +63,9 @@ export function OnboardingPage({ onComplete }: { onComplete: () => void }) {
               </ToggleChip>
             ))}
           </div>
-          <PrimaryButton onClick={handleFinish}>완료하고 추천 받기</PrimaryButton>
+          <PrimaryButton disabled={finishing} onClick={handleFinish}>
+            {finishing ? '추천을 준비하고 있어요…' : '완료하고 추천 받기'}
+          </PrimaryButton>
         </div>
       )}
     </div>

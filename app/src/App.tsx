@@ -233,7 +233,7 @@ export function App() {
       rightSlot = homeButton;
       break;
     case 'reviewWrite':
-      title = '기록 남기기';
+      title = screen.reviewId ? '기록 수정' : '기록 남기기';
       onBack = goBack;
       rightSlot = homeButton;
       break;
@@ -257,6 +257,7 @@ export function App() {
       rightSlot={rightSlot}
       showBottomNav={showBottomNav}
       activeTab={activeTab}
+      scrollKey={JSON.stringify(screen)}
       onNavigateTab={(name) => {
         if (name === 'home') navigate({ name: 'home' });
         else if (name === 'board') navigate({ name: 'board' });
@@ -308,7 +309,8 @@ export function App() {
       {screen.name === 'reviewWrite' && (
         <ReviewWritePage
           bookId={screen.bookId}
-          onCreated={(reviewId) => replace({ name: 'reviewDetail', reviewId })}
+          reviewId={screen.reviewId}
+          onSaved={(reviewId) => replace({ name: 'reviewDetail', reviewId })}
         />
       )}
 
@@ -316,6 +318,8 @@ export function App() {
         <ReviewDetailPage
           reviewId={screen.reviewId}
           onSelectBook={(bookId) => navigate({ name: 'bookDetail', bookId })}
+          onEdit={(bookId, reviewId) => navigate({ name: 'reviewWrite', bookId, reviewId })}
+          onDeleted={() => navigate({ name: 'board' })}
         />
       )}
     </Shell>

@@ -1,0 +1,36 @@
+# <dockerhub-id>는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+#
+# backend 이미지에는 리포 루트의 data/processed/*.jsonl이 들어있지 않다
+# (backend/Dockerfile은 backend/ 디렉터리만 COPY함, docker-compose의 ./data:/data:ro와
+# 동일한 역할을 K8s에서는 EC2 노드 파일시스템의 hostPath로 대신한다).
+# 이 Job을 실행하기 전, EC2 노드에 미리 데이터를 올려둬야 한다:
+#   scp -i literec-key.pem -r ./data ubuntu@<EC2-Public-IP>:/opt/literec/data
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-data
+  namespace: backend
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: seed
+        image: j2nii/literec-backend:latest
+        command: ["sh", "-c", "uv run alembic upgrade head && uv run python scripts/seed.py"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: database-url
+        volumeMounts:
+        - name: seed-data
+          mountPath: /data
+          readOnly: true
+      volumes:
+      - name: seed-data
+        hostPath:
+          path: /opt/literec/data
+          type: Directory

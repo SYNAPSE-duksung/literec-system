@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useReview } from '../hooks/useReview';
 import { useBook } from '../hooks/useBook';
 import { useSimilarReviewBooks } from '../hooks/useSimilarReviewBooks';
 import { useReviewReaction } from '../hooks/useReviewReaction';
+import { useDeleteReview } from '../hooks/useDeleteReview';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { Avatar } from '../components/common/Avatar';
 import { Tag } from '../components/common/Tag';
 import { Card } from '../components/common/Card';
@@ -13,25 +16,48 @@ import './ReviewDetailPage.css';
 interface ReviewDetailPageProps {
   reviewId: string;
   onSelectBook: (bookId: string) => void;
+  onEdit: (bookId: string, reviewId: string) => void;
+  onDeleted: () => void;
 }
 
-export function ReviewDetailPage({ reviewId, onSelectBook }: ReviewDetailPageProps) {
+export function ReviewDetailPage({ reviewId, onSelectBook, onEdit, onDeleted }: ReviewDetailPageProps) {
   const { data: review, isLoading } = useReview(reviewId);
   const { data: book } = useBook(review?.bookId ?? '');
   const { data: similarBooks, isLoading: similarLoading } = useSimilarReviewBooks(reviewId);
   const { myReaction, setReaction } = useReviewReaction(reviewId);
+  const { data: profile } = useUserProfile();
+  const { deleteReview } = useDeleteReview();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (isLoading || !review) {
     return <div className="review-detail-page empty-state">불러오는 중이에요</div>;
   }
 
   const likeCount = review.likeCount + (myReaction === 'like' ? 1 : 0);
+  const isOwnReview = review.userId === profile?.userId;
+
+  const handleDelete = async () => {
+    if (!window.confirm('이 기록을 삭제할까요? 삭제하면 되돌릴 수 없어요.')) return;
+    setIsDeleting(true);
+    try {
+      await deleteReview(review.id);
+      onDeleted();
+    } catch {
+      setIsDeleting(false);
+      window.alert('삭제에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
 
   return (
     <div className="review-detail-page">
       {book && (
         <Card className="review-detail-page__book" onClick={() => onSelectBook(book.id)}>
-          <img className="review-detail-page__book-cover" src={book.coverUrl} alt={book.title} />
+          <img
+            className="review-detail-page__book-cover"
+            src={book.coverUrl}
+            alt={book.title}
+            decoding="async"
+          />
           <div>
             <p className="review-detail-page__book-title">{book.title}</p>
             <p className="review-detail-page__book-author">
@@ -49,6 +75,25 @@ export function ReviewDetailPage({ reviewId, onSelectBook }: ReviewDetailPagePro
             {new Date(review.createdAt).toLocaleDateString('ko-KR')}
           </p>
         </div>
+        {isOwnReview && (
+          <div className="review-detail-page__owner-actions">
+            <Button
+              variant="text"
+              className="review-detail-page__edit-btn"
+              onClick={() => onEdit(review.bookId, review.id)}
+            >
+              수정
+            </Button>
+            <Button
+              variant="text"
+              className="review-detail-page__delete-btn"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? '삭제 중…' : '삭제'}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="review-detail-page__emotions">

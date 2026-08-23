@@ -1,0 +1,32 @@
+# <dockerhub-id>는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+#
+# 실행 전 upstage-secret을 ml 네임스페이스에 먼저 만들어야 한다(값은 커밋하지 않음):
+#   kubectl create secret generic upstage-secret -n ml --from-literal=api-key='<Upstage API 키>'
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: structure-reviews
+  namespace: ml
+spec:
+  schedule: "0 2 * * *"   # 매일 새벽 2시
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: structure-reviews
+            image: <dockerhub-id>/literec-ml:latest
+            command: ["uv", "run", "--project", "ML", "python", "-m", "ML.pipeline.cronjobs.structure_new_reviews"]
+            env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: database-url
+            - name: UPSTAGE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: upstage-secret
+                  key: api-key

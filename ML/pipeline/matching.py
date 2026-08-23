@@ -75,6 +75,30 @@ def rank_books(
     return scored[:k]
 
 
+def rank_by_vector(
+    query_vector: np.ndarray,
+    book_identities: dict[str, BookIdentity],
+    exclude_book_id: str | None = None,
+    k: int = 10,
+) -> list[tuple[str, float]]:
+    """유저 프로필(선호/기피 페널티)이 아니라 임의의 단일 쿼리 벡터 기준으로 책을
+    max-similarity 순 정렬한다. '이 리뷰와 결이 비슷한 책'처럼 선호/기피 개념이
+    없는 쿼리(리뷰 임베딩 자체)에 쓴다 — rank_books()는 UserProfileVectors 전용이라
+    이 용도에는 타입이 맞지 않는다.
+
+    exclude_book_id로 원본 리뷰가 속한 책을 후보에서 제외한다. cosine_max_sim이
+    후보 벡터가 없으면 0.0을 반환하므로, 결이 0개인 책은 별도 분기 없이 자연스럽게
+    순위 하위로 밀린다.
+    """
+    scored = [
+        (book_id, cosine_max_sim(query_vector, identity.vectors()))
+        for book_id, identity in book_identities.items()
+        if book_id != exclude_book_id
+    ]
+    scored.sort(key=lambda pair: pair[1], reverse=True)
+    return scored[:k]
+
+
 if __name__ == "__main__":
     import json
 

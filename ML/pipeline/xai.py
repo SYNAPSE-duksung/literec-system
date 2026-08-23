@@ -230,6 +230,41 @@ def build_recommendation_explanation(
     }
 
 
+def build_similar_book_explanation(
+    query_vector: np.ndarray,
+    book_id: str,
+    identity: BookIdentity,
+    result: GlobalClusterResult,
+    review_embeddings: dict[str, np.ndarray],
+    reviews_by_id: dict[str, dict],
+) -> dict:
+    """'이 리뷰와 결이 비슷한 후기의 책' 카드용. build_recommendation_explanation과
+    같은 근거(facet)를 쓰지만, 그쪽은 hook_line == explanation(같은 문자열)이라
+    "인용문"과 "이유"를 구분해서 보여줘야 하는 이 화면에는 그대로 못 쓴다.
+    snippet은 대표 리뷰의 축 원문 그대로(프론트가 따옴표로 감싸므로 접두어 없이),
+    reason은 기존 format_reason()의 문구를 그대로 재사용해 홈 화면 XAINote와
+    같은 톤을 유지한다."""
+    facet = None
+    if identity.cluster_vectors:
+        facet = explain_recommendation(
+            query_vector, book_id, identity, result, review_embeddings, reviews_by_id
+        )
+    if facet is None:
+        return {"snippet": COLDSTART_FALLBACK_REASON, "reason": COLDSTART_FALLBACK_REASON}
+
+    content = facet["representative_content"]
+    snippet = next(
+        (
+            content[axis]
+            for axis in ["좋았던_요소", "정서_경험", "소재_및_주제", "독서_경험_맥락"]
+            if content.get(axis)
+        ),
+        COLDSTART_FALLBACK_REASON,
+    )
+    reason = format_reason(facet)
+    return {"snippet": snippet, "reason": reason}
+
+
 if __name__ == "__main__":
     from clustering import global_cluster, compute_book_identities
     from embedding import load_embeddings

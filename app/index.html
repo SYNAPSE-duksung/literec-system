@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <title>결 — 깊이 있는 후기로 책을 만나요</title>
+    <!-- 책 표지가 이 CDN에서 오는데, 첫 <img> 태그가 뜰 때까지 기다리지 않고
+         페이지 로드 시점에 미리 DNS/TCP/TLS 연결을 맺어둬서 표지 로딩 체감 속도를 줄인다. -->
+    <link rel="preconnect" href="https://shopping-phinf.pstatic.net" crossorigin />
+    <link rel="dns-prefetch" href="https://shopping-phinf.pstatic.net" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"

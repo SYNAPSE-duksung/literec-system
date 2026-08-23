@@ -115,7 +115,14 @@ interface Book {
   publisher: string;
   coverUrl: string;
   synopsis: string;
+  // trait/score 매핑(스코어링)이 미확정이라 현재 항상 빈 배열(LiteRec_Backend_ClaudeCode_Brief.md §9.1) — 확정 전까지 6.5의 RadarChart는 렌더링하지 않는다(identityVectors.length > 0일 때만 표시)
   identityVectors: { trait: string; score: number; keywords: string[] }[];
+  // 신규(2026-08-19): book_aspects 원본 축 텍스트 — 스코어링 없이 그대로 노출
+  aspects: {
+    emotionExperience: string[]; // 정서_경험
+    likedElements: string[];     // 좋았던_요소
+    dislikedElements: string[];  // 별로였던_요소
+  };
 }
 
 interface Review {
@@ -178,6 +185,8 @@ interface SimilarReviewRecommendation {
 | `useUserProfile()` | `updateProfile(partial)` | 온보딩/마이페이지 취향 재설정 |
 | `useUserProfile()` | `dislikedBookIds`, `setBookReaction(bookId, reaction)` | 책 좋아요/싫어요 (상호 배타), `data.likedBookIds`와 연동. `BookCard`(홈/검색/마이페이지/마이페이지 전체보기/bookDetail 공용)가 이 훅으로 좋아요❤️/싫어요👎 아이콘 버튼 둘 다 렌더링 |
 | `useCreateReview()` | `createReview(input)` | 리뷰 작성 제출 |
+| `useUpdateReview()` | `updateReview(reviewId, input)` | 리뷰 수정 제출(2026-08-19 신규), 본인 리뷰만 성공 |
+| `useDeleteReview()` | `deleteReview(reviewId)` | 리뷰 삭제(2026-08-19 신규), 본인 리뷰만 성공 |
 | `useReviewReaction(reviewId)` | `{ myReaction, setReaction }` | 리뷰 좋아요/싫어요 (상호 배타), 리뷰 상세 전용 |
 
 ---
@@ -261,6 +270,8 @@ TopHeader (뒤로가기 + 책 제목)
 
 [이 책의 결] 카드
   RadarChart(identityVectors) — SVG polygon 직접 계산, trait 5개 축
+  ⚠️ identityVectors는 스코어링 미확정으로 현재 항상 빈 배열 — 채워지기 전까지 RadarChart는 렌더링하지 않는다
+  대신(2026-08-19 신규) aspects의 원본 축 텍스트를 라벨+태그로 표시: 느낀 정서(emotionExperience) / 좋았던 점(likedElements) / 아쉬웠던 점(dislikedElements), 각 값이 있을 때만 렌더링
 
 XAI 설명 문구 (하트 아이콘 + explanation)
 
@@ -281,25 +292,29 @@ TopHeader
 BottomNav (게시판 활성)
 ```
 
-### 6.7 리뷰 작성 (`screen.name: "reviewWrite", bookId`)
+### 6.7 리뷰 작성 (`screen.name: "reviewWrite", bookId, reviewId?`)
 
 ```
-TopHeader (뒤로가기 + "기록 남기기")
-대상 도서 요약 카드 (표지+제목+작가)
+TopHeader (뒤로가기 + "기록 남기기", reviewId 있으면 "기록 수정")
+대상 도서 요약 카드 (표지+제목+작가) — reviewId 있으면(수정 모드) 책 변경 불가
 느낀 정서 — ToggleChip 다중 선택
 좋았던 점 — input
 아쉬웠던 점 — input
 기록 — textarea (7행)
-[기록 올리기 버튼] (content 비어있지 않아야 활성화)
-제출 시 → setScreen({ name: "reviewDetail", reviewId: 새로_생성된_id }) 또는 { name: "board" }
+[기록 올리기 / 수정 완료 버튼] (content 비어있지 않아야 활성화)
+제출 시 → setScreen({ name: "reviewDetail", reviewId: 저장된_id })
 ```
+
+**수정 모드(2026-08-19 신규)**: `reviewId`가 있으면 위 폼이 `useReview(reviewId)`로 가져온 기존 내용(정서/좋았던 점/아쉬웠던 점/본문)으로 초기화되고, 제출 시 `useCreateReview` 대신 `useUpdateReview(reviewId)`를 호출해 같은 리뷰를 고친다(6.8의 "수정" 버튼에서 진입).
 
 ### 6.8 리뷰 상세 (`screen.name: "reviewDetail", reviewId`) — ★ 이번 설계의 핵심
 
 ```
 TopHeader (뒤로가기 + 책 제목)
 
-작성자 아바타 + 이름 + 작성일
+작성자 아바타 + 이름 + 작성일 [+ 수정/삭제 버튼(2026-08-19 신규, 본인이 작성한 기록일 때만: review.userId === useUserProfile().data.userId)]
+  수정 버튼 클릭 → setScreen({ name: "reviewWrite", bookId: review.bookId, reviewId: review.id }) — 책 선택 단계 없이 기존 내용이 채워진 폼으로 바로 진입(6.7 참고), 저장 시 새 리뷰를 만들지 않고 이 리뷰를 고침(useUpdateReview) → 성공 시 리뷰 상세로 복귀(replace)
+  삭제 버튼 클릭 → confirm 확인 후 useDeleteReview().deleteReview(reviewId) 호출 → 성공 시 게시판으로 이동(onDeleted)
 정서 태그 (accent 스타일)
 본문 (whitespace-pre-wrap)
 

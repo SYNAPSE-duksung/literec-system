@@ -42,6 +42,31 @@ def to_sentence(review: dict) -> str:
     return " ".join(parts)
 
 
+def to_review_sentence(
+    emotion_tags: list[str] | None,
+    liked_points: list[str] | None,
+    disliked_points: list[str] | None,
+    content: str,
+) -> str:
+    """'이 리뷰와 결이 비슷한 후기의 책' 기능 전용 쿼리 문장 생성기 — 오프라인
+    인덱싱용 to_sentence()와는 별개 진입점이며 그 함수의 계약은 건드리지 않는다.
+
+    to_sentence()의 축 라벨 템플릿을 재사용하되, 백엔드 Review에는 소재_및_주제/
+    독서_경험_맥락에 대응하는 필드가 없어 정서_경험/좋았던_요소/별로였던_요소
+    3축만 채운다. 시드된 리뷰(결-bot, 440건)는 이 3축이 전부 비어 있으므로
+    (원본 llm_reviews.jsonl에 애초에 없는 필드) 그 경우 content 원문으로
+    폴백한다 — content는 NOT NULL이고 프론트가 빈 값 제출을 막으므로 항상
+    비어있지 않은 문자열을 반환한다.
+    """
+    axis_values = {
+        "정서_경험": ", ".join(emotion_tags) if emotion_tags else None,
+        "좋았던_요소": " ".join(liked_points) if liked_points else None,
+        "별로였던_요소": " ".join(disliked_points) if disliked_points else None,
+    }
+    sentence = to_sentence(axis_values)
+    return sentence if sentence else content
+
+
 def get_model(model_name: str = DEFAULT_MODEL_NAME) -> SentenceTransformer:
     """모델을 최초 1회만 로드하고 이후 호출에서는 캐시를 재사용한다."""
     if model_name not in _model_cache:

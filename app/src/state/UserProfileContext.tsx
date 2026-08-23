@@ -18,7 +18,7 @@ interface UserProfileContextValue {
   isLoading: boolean;
   isError: boolean;
   dislikedBookIds: string[];
-  updateProfile: (partial: Partial<UserProfile>) => void;
+  updateProfile: (partial: Partial<UserProfile>) => Promise<void>;
   setBookReaction: (bookId: string, reaction: 'like' | 'dislike' | null) => void;
 }
 
@@ -57,23 +57,27 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     load();
   }, [load]);
 
-  const updateProfile = (partial: Partial<UserProfile>) => {
-    apiFetch<ProfileResponse>('/api/users/me/profile', {
-      method: 'PATCH',
-      body: JSON.stringify({
-        preferredEmotions: partial.preferredEmotions,
-        avoidedTraits: partial.avoidedTraits,
-      }),
-    })
-      .then((profile) => {
-        setData((prev) => ({
-          userId: profile.userId,
-          preferredEmotions: profile.preferredEmotions,
-          avoidedTraits: profile.avoidedTraits,
-          likedBookIds: prev?.likedBookIds ?? [],
-        }));
-      })
-      .catch(() => setIsError(true));
+  // Promise를 반환한다 — 온보딩처럼 "저장이 끝난 뒤에 화면을 옮겨야" 하는
+  // 호출부가 완료를 기다릴 수 있어야 한다(안 그러면 ML 프로필 등록이 끝나기 전에
+  // 추천 조회가 먼저 나가 빈 추천으로 뜨는 레이스가 생긴다).
+  const updateProfile = async (partial: Partial<UserProfile>): Promise<void> => {
+    try {
+      const profile = await apiFetch<ProfileResponse>('/api/users/me/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          preferredEmotions: partial.preferredEmotions,
+          avoidedTraits: partial.avoidedTraits,
+        }),
+      });
+      setData((prev) => ({
+        userId: profile.userId,
+        preferredEmotions: profile.preferredEmotions,
+        avoidedTraits: profile.avoidedTraits,
+        likedBookIds: prev?.likedBookIds ?? [],
+      }));
+    } catch {
+      setIsError(true);
+    }
   };
 
   const setBookReaction = (bookId: string, reaction: 'like' | 'dislike' | null) => {

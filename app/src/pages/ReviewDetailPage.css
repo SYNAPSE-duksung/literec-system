@@ -43,6 +43,29 @@
   font-weight: 600;
 }
 
+.review-detail-page__owner-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.review-detail-page__edit-btn,
+.review-detail-page__delete-btn {
+  width: auto;
+  height: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.review-detail-page__edit-btn {
+  color: var(--color-text-secondary);
+}
+
+.review-detail-page__delete-btn {
+  color: #b3261e;
+}
+
 .review-detail-page__date {
   margin: 0;
   font-size: 11px;

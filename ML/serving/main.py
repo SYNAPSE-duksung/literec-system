@@ -10,9 +10,11 @@ from contextlib import asynccontextmanager
 import os
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ML.pipeline import aspect_based_model as abm
+from ML.pipeline import embedding
+from ML.pipeline import matching
 from ML.pipeline import xai
 from ML.pipeline.user_profile import build_single_user_profile
 
@@ -22,7 +24,9 @@ ADMIN_SECRET = os.getenv("ADMIN_SECRET", "change-me")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     abm.ensure_catalog_loaded()
-    abm.ensure_profiles_loaded()  # eval_users.json (오프라인 평가용 팀원 4명) — 실제 유저는 /profile/build로 추가됨
+    # eval_users.json(오프라인 평가용 팀원 4명) + DATABASE_URL의 실제 온보딩 유저를 함께 로드.
+    # 이후 신규 온보딩/재설정은 /profile/build가 같은 캐시를 in-place로 갱신한다.
+    abm.ensure_profiles_loaded()
     yield
 
 
@@ -40,7 +44,7 @@ def health() -> dict:
 
 class RecommendRequest(BaseModel):
     user_id: str
-    k: int = 10
+    k: int = Field(default=10, ge=1, le=50)
 
 
 class RecommendedBookOut(BaseModel):
@@ -79,6 +83,49 @@ def get_recommendations(req: RecommendRequest) -> list[RecommendedBookOut]:
                 "explanation": xai.COLDSTART_FALLBACK_REASON,
             }
         results.append(RecommendedBookOut(book_id=book_id, **explanation))
+    return results
+
+
+class SimilarBooksRequest(BaseModel):
+    isbn: str
+    emotion_tags: list[str] = []
+    liked_points: list[str] = []
+    disliked_points: list[str] = []
+    content: str
+    k: int = Field(default=3, ge=1, le=20)
+
+
+class SimilarBookOut(BaseModel):
+    book_id: str
+    snippet: str
+    reason: str
+
+
+@app.post("/similar-books", response_model=list[SimilarBookOut])
+def get_similar_books(req: SimilarBooksRequest) -> list[SimilarBookOut]:
+    bundle = abm.ensure_catalog_loaded()
+
+    sentence = embedding.to_review_sentence(
+        req.emotion_tags, req.liked_points, req.disliked_points, req.content
+    )
+    query_vector = embedding.embed([sentence])[0]
+
+    ranked = matching.rank_by_vector(
+        query_vector, bundle.book_identities, exclude_book_id=req.isbn, k=req.k
+    )
+
+    results = []
+    for book_id, _score in ranked:
+        identity = bundle.book_identities[book_id]
+        explanation = xai.build_similar_book_explanation(
+            query_vector,
+            book_id,
+            identity,
+            bundle.cluster_result,
+            bundle.review_embeddings,
+            bundle.reviews_by_id,
+        )
+        results.append(SimilarBookOut(book_id=book_id, **explanation))
     return results
 
 

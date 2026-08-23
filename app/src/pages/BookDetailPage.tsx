@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Book } from '../types';
 import { useBook } from '../hooks/useBook';
 import { useReviewsByBook } from '../hooks/useReviewsByBook';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -18,6 +19,13 @@ interface BookDetailPageProps {
 }
 
 const SYNOPSIS_PREVIEW_LIMIT = 150;
+
+// book_aspects 원본 축 텍스트를 그대로 보여줄 라벨 — 리뷰 작성 화면(6.7절)과 동일한 표현으로 통일.
+const ASPECT_GROUPS: { key: keyof Book['aspects']; label: string }[] = [
+  { key: 'emotionExperience', label: '느낀 정서' },
+  { key: 'likedElements', label: '좋았던 점' },
+  { key: 'dislikedElements', label: '아쉬웠던 점' },
+];
 
 export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDetailPageProps) {
   const { data: book, isLoading } = useBook(bookId);
@@ -44,7 +52,12 @@ export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDe
   return (
     <div className="book-detail-page">
       <div className="book-detail-page__summary">
-        <img className="book-detail-page__cover" src={book.coverUrl} alt={book.title} />
+        <img
+          className="book-detail-page__cover"
+          src={book.coverUrl}
+          alt={book.title}
+          decoding="async"
+        />
         <div>
           <p className="book-detail-page__title">{book.title}</p>
           <p className="book-detail-page__author">
@@ -98,8 +111,26 @@ export function BookDetailPage({ bookId, onSelectReview, onWriteReview }: BookDe
 
       <Card className="book-detail-page__radar-card">
         <p className="book-detail-page__section-title">이 책의 결</p>
-        <IdentityRadarChart vectors={book.identityVectors} />
-        <XAINote text={`${book.identityVectors[0]?.trait ?? ''} 성향이 두드러지는 책이에요`} />
+        {book.identityVectors.length > 0 && (
+          <>
+            <IdentityRadarChart vectors={book.identityVectors} />
+            <XAINote text={`${book.identityVectors[0].trait} 성향이 두드러지는 책이에요`} />
+          </>
+        )}
+        {ASPECT_GROUPS.map(({ key, label }) => {
+          const items = book.aspects[key];
+          if (items.length === 0) return null;
+          return (
+            <div key={key} className="book-detail-page__aspect-group">
+              <p className="book-detail-page__aspect-label">{label}</p>
+              <div className="book-detail-page__aspect-tags">
+                {items.map((item) => (
+                  <Tag key={item}>{item}</Tag>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </Card>
 
       <div className="book-detail-page__reviews-header">

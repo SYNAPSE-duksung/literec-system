@@ -4,6 +4,7 @@ from app.models.book_reaction import BookReaction
 from app.models.recommendation_event import RecommendationEvent
 from app.models.refresh_token import RefreshToken
 from app.models.review import Review
+from app.models.review_axes import ReviewAxes
 from app.models.review_reaction import ReviewReaction
 from app.models.user import User
 from app.models.user_profile import UserProfile
@@ -15,6 +16,7 @@ __all__ = [
     "RecommendationEvent",
     "RefreshToken",
     "Review",
+    "ReviewAxes",
     "ReviewReaction",
     "User",
     "UserProfile",

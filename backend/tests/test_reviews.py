@@ -159,3 +159,163 @@ def test_review_reaction_toggle_and_mutual_exclusivity(client, db_session):
     assert clear_res.status_code == 204
     reactions_after_clear = client.get("/api/users/me/review-reactions", headers=headers)
     assert reactions_after_clear.json() == {}
+
+
+def test_update_own_review_succeeds(client, db_session):
+    _create_book(db_session, "9780000000018")
+    token = _login_and_get_token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    create_res = client.post(
+        "/api/reviews",
+        json={
+            "isbn": "9780000000018",
+            "content": "처음 내용",
+            "emotion": ["잔잔함"],
+            "liked": ["문체"],
+            "disliked": [],
+        },
+        headers=headers,
+    )
+    review_id = create_res.json()["id"]
+
+    update_res = client.patch(
+        f"/api/reviews/{review_id}",
+        json={
+            "content": "고친 내용",
+            "emotion": ["몰입감"],
+            "liked": ["결말"],
+            "disliked": ["전개"],
+        },
+        headers=headers,
+    )
+    assert update_res.status_code == 200
+    body = update_res.json()
+    assert body["content"] == "고친 내용"
+    assert body["emotion"] == ["몰입감"]
+    assert body["liked"] == ["결말"]
+    assert body["disliked"] == ["전개"]
+    assert body["bookId"] == "9780000000018"  # isbn은 그대로 유지
+
+    get_res = client.get(f"/api/reviews/{review_id}")
+    assert get_res.json()["content"] == "고친 내용"
+
+
+def test_update_review_requires_auth(client, db_session):
+    _create_book(db_session, "9780000000019")
+    token = _login_and_get_token(client)
+    create_res = client.post(
+        "/api/reviews",
+        json={"isbn": "9780000000019", "content": "내용", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    review_id = create_res.json()["id"]
+
+    res = client.patch(f"/api/reviews/{review_id}", json={"content": "수정 시도"})
+    assert res.status_code == 401
+
+
+def test_update_others_review_returns_403(client, db_session):
+    _create_book(db_session, "9780000000020")
+    owner_token = _login_and_get_token(client)
+    create_res = client.post(
+        "/api/reviews",
+        json={"isbn": "9780000000020", "content": "원본", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    review_id = create_res.json()["id"]
+
+    client.post(
+        "/api/auth/signup",
+        json={"email": "editor-other@example.com", "password": "password123", "name": "다른사람"},
+    )
+    other_login = client.post(
+        "/api/auth/login", json={"email": "editor-other@example.com", "password": "password123"}
+    )
+    other_token = other_login.json()["access_token"]
+
+    res = client.patch(
+        f"/api/reviews/{review_id}",
+        json={"content": "몰래 수정", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+    assert res.status_code == 403
+
+    get_res = client.get(f"/api/reviews/{review_id}")
+    assert get_res.json()["content"] == "원본"
+
+
+def test_update_unknown_review_returns_404(client):
+    token = _login_and_get_token(client)
+    res = client.patch(
+        "/api/reviews/00000000-0000-0000-0000-000000000000",
+        json={"content": "내용", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 404
+
+
+def test_delete_own_review_succeeds(client, db_session):
+    _create_book(db_session, "9780000000015")
+    token = _login_and_get_token(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    create_res = client.post(
+        "/api/reviews",
+        json={"isbn": "9780000000015", "content": "내용", "emotion": [], "liked": [], "disliked": []},
+        headers=headers,
+    )
+    review_id = create_res.json()["id"]
+
+    # 삭제 전에 스스로 좋아요를 남겨서 review_reactions FK 정리까지 함께 검증한다.
+    client.post(f"/api/reviews/{review_id}/reaction", json={"reaction": "like"}, headers=headers)
+
+    delete_res = client.delete(f"/api/reviews/{review_id}", headers=headers)
+    assert delete_res.status_code == 204
+
+    get_res = client.get(f"/api/reviews/{review_id}")
+    assert get_res.status_code == 404
+
+
+def test_delete_review_requires_auth(client, db_session):
+    _create_book(db_session, "9780000000016")
+    token = _login_and_get_token(client)
+    create_res = client.post(
+        "/api/reviews",
+        json={"isbn": "9780000000016", "content": "내용", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    review_id = create_res.json()["id"]
+
+    res = client.delete(f"/api/reviews/{review_id}")
+    assert res.status_code == 401
+
+
+def test_delete_others_review_returns_403(client, db_session):
+    _create_book(db_session, "9780000000017")
+    owner_token = _login_and_get_token(client)
+    create_res = client.post(
+        "/api/reviews",
+        json={"isbn": "9780000000017", "content": "내용", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    review_id = create_res.json()["id"]
+
+    client.post("/api/auth/signup", json={"email": "other@example.com", "password": "password123", "name": "다른사람"})
+    other_login = client.post(
+        "/api/auth/login", json={"email": "other@example.com", "password": "password123"}
+    )
+    other_token = other_login.json()["access_token"]
+
+    res = client.delete(f"/api/reviews/{review_id}", headers={"Authorization": f"Bearer {other_token}"})
+    assert res.status_code == 403
+
+    get_res = client.get(f"/api/reviews/{review_id}")
+    assert get_res.status_code == 200
+
+
+def test_delete_unknown_review_returns_404(client):
+    token = _login_and_get_token(client)
+    res = client.delete(
+        "/api/reviews/00000000-0000-0000-0000-000000000000",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 404

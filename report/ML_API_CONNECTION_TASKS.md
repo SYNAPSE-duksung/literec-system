@@ -87,23 +87,26 @@ is_processed: Mapped[bool] = mapped_column(Boolean, server_default="false", null
 
 **0-1b. `reviews.created_at` 값 정정 — 시드 스크립트 수정 (신규)**
 
-`backend/scripts/seed_data.py`는 `data/processed/llm_reviews.jsonl`(440건)을 적재할 때 `created_at`을 명시하지 않는다. 그 결과 컬럼의 `server_default=func.now()`가 적용되어, **440건 전부가 "시드 스크립트를 마지막으로 실행한 시각"**으로 찍힌다. 프론트(`ReviewCard`/`ReviewDetailPage`)는 이미 이 값을 그대로 렌더링하고 있으므로, 지금 상태로는 리뷰 440건이 전부 같은 날 같은 시각에 작성된 것처럼 보인다.
+> **정정(2026-08-18)**: STEP 0 실제 구현 과정에서 시딩 스크립트가 `backend/scripts/seed_data.py`(created_at/is_processed는 맞게 세팅하지만 `book_aspects`는 전혀 채우지 않음)와 `backend/scripts/seed.py`(book_aspects까지 upsert하지만 created_at/is_processed는 세팅 안 해서 아래 버그를 되살림) 두 개로 갈라져 있었다. `report/LiteRec_Backend_ClaudeCode_Brief.md` §7이 원래 지정한 이름(`seed.py`)과 더 안전한 upsert 구조(uuid5 고정키, delete 없이 upsert라 `review_reactions` FK 위반 위험 자체가 없음)를 기준으로 `seed.py`를 정본으로 통합하고 `seed_data.py`는 삭제했다. 아래 내용은 이 통합된 `seed.py` 기준이다.
+
+`backend/scripts/seed.py`의 `seed_reviews()`는 `data/processed/llm_reviews.jsonl`(440건)을 적재할 때 원래 `created_at`을 명시하지 않았다. 그 결과 컬럼의 `server_default=func.now()`가 적용되어, **440건 전부가 "시드 스크립트를 마지막으로 실행한 시각"**으로 찍힌다. 프론트(`ReviewCard`/`ReviewDetailPage`)는 이미 이 값을 그대로 렌더링하고 있으므로, 지금 상태로는 리뷰 440건이 전부 같은 날 같은 시각에 작성된 것처럼 보인다.
 
 `llm_reviews.jsonl` 자체에는 작성 시각 필드가 없으므로, **이 파일이 최초로 리포지토리에 커밋된 시각**을 대신 사용한다(`git log --diff-filter=A --follow -- data/processed/llm_reviews.jsonl` → 커밋 `1c96df5`, **2026-07-26 23:28:11 +09:00**).
 
 ```python
-# backend/scripts/seed_data.py
+# backend/scripts/seed.py
 from datetime import datetime, timezone, timedelta
 
 KST = timezone(timedelta(hours=9))
 LLM_REVIEWS_SEED_CREATED_AT = datetime(2026, 7, 26, 23, 28, 11, tzinfo=KST)
 
-# 리뷰 insert 시:
-Review(
+# seed_reviews()의 upsert values/on_conflict_do_update 양쪽 모두에 반영:
+pg_insert(Review).values(
+    id=review_id,             # uuid5(SEED_REVIEW_NAMESPACE, f"{isbn}:{persona}:{review_index}")
     isbn=row["isbn"],
-    user_id=llm_bot_user_id,
+    user_id=bot.id,           # get_or_create_llm_bot()으로 조회/생성한 "결-bot" 유저
     source="llm_generated",
-    persona=row.get("persona"),
+    persona=row["persona"],
     content=row["content"],
     created_at=LLM_REVIEWS_SEED_CREATED_AT,
     is_processed=True,
@@ -119,7 +122,7 @@ SET created_at = '2026-07-26 23:28:11+09', is_processed = TRUE
 WHERE source = 'llm_generated';
 ```
 
-> 참고: `structured_reviews.jsonl`(5축 구조화본, 커밋 `599677d`, 2026-07-30)은 별도 파생 파일이며 `seed_data.py`가 읽지 않는다 — `reviews.created_at`과는 무관, ML 파이프라인 입력으로만 쓰인다.
+> 참고: `structured_reviews.jsonl`(5축 구조화본, 커밋 `599677d`, 2026-07-30)은 별도 파생 파일이며 `seed.py`가 읽지 않는다 — `reviews.created_at`과는 무관, ML 파이프라인 입력으로만 쓰인다.
 
 > **프론트엔드 변경 불필요**: `Review.createdAt` 표시는 이미 `ReviewCard.tsx`/`ReviewDetailPage.tsx`에 구현되어 있다(`new Date(review.createdAt).toLocaleDateString('ko-KR')`). 이 STEP은 화면에 새 UI를 추가하는 게 아니라, 이미 있는 화면에 들어갈 **값을 바로잡는** 작업이다.
 
@@ -192,14 +195,14 @@ alembic upgrade head
 # reviews.is_processed 컬럼 확인
 # recommendation_events 테이블 생성 확인
 
-uv run python scripts/seed_data.py
+uv run python scripts/seed.py
 # reviews.created_at이 2026-07-26 23:28:11+09로, is_processed가 TRUE로 찍히는지 확인
 ```
 
 **체크리스트**
 ```
 [ ] 0-1: reviews.is_processed 컬럼 마이그레이션 작성 + 실행 (+ 모델에 컬럼 추가)
-[ ] 0-1b: seed_data.py가 LLM 리뷰 created_at을 커밋 시각으로 명시 설정하도록 수정 + backfill SQL 실행
+[ ] 0-1b: seed.py가 LLM 리뷰 created_at을 커밋 시각으로 명시 설정하도록 수정 + backfill SQL 실행 (seed_data.py는 삭제, seed.py로 통합)
 [ ] 0-2: recommendation_events 테이블 마이그레이션 작성 + 실행 (UUID/String FK 타입 확인)
 [ ] 0-3: SQLAlchemy 모델 파일 추가 (backend/app/models/recommendation_event.py)
 [ ] 0-4: alembic upgrade head + 시드 재실행 로컬 확인
@@ -759,6 +762,12 @@ const handleBookClick = (book: Book, rank: number) => {
 
 ### STEP 3 — 로컬 통합 테스트 (docker-compose)
 
+> **정정(2026-08-19)**: 원안을 그대로 적용하면 3곳이 깨진다 — 자세한 이유는 [정합성 점검 결과 G](#g-step-3-docker-composeml-서비스-원안이-실제로-깨지는-3곳) 참고.
+> 1. `DATABASE_URL` 미지정 — `aspect_based_model.py`의 `DEFAULT_DATABASE_URL`이 `localhost:5432`라 컨테이너 안에서 DB를 못 찾는다. 에러 없이 조용히 빈 리스트로 폴백돼(`load_db_users()`), "이미 온보딩한 실제 유저인데 재기동 후 추천이 빈 상태"인 이전에 고친 버그가 docker-compose 환경에서만 재발한다.
+> 2. `./ML:/app/ML` 통째 바인드마운트 — 호스트에 이미 `ML/.venv`(Windows용)가 있어 그대로 덮으면 `backend`가 겪었던 것과 같은 venv 충돌이 재발한다. `.venv`만 별도 named volume으로 분리해야 한다.
+> 3. 헬스체크 없음 — 카탈로그 빌드(모델 로드 + 리뷰 440건 임베딩 + 클러스터링)에 몇 십 초가 걸리는데, `backend`가 `ml`을 기다리지 않으면 첫 기동 시 `GET /api/recommendations`가 일시적으로 503을 낸다.
+> (부가) HuggingFace 모델(`jhgan/ko-sroberta-multitask`, ~400MB) 캐시 볼륨도 추가해 컨테이너를 새로 만들 때마다 재다운로드하지 않게 한다.
+
 **3-1. `docker-compose.yml` ml 서비스 추가**
 
 ```yaml
@@ -772,11 +781,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - ML_SERVER_URL=http://ml:8001
-      - ADMIN_SECRET=change-me
+      ML_SERVER_URL: http://ml:8001
     depends_on:
-      - db
-      - ml
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
 
   ml:
     build:
@@ -785,41 +795,68 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - ADMIN_SECRET=change-me
+      # backend와 동일하게 db 서비스를 명시로 가리켜야 한다 — 기본값(localhost)은
+      # 컨테이너 안에서 연결에 실패해 "빈 리스트로 조용히 폴백"된다(에러 없음).
+      DATABASE_URL: postgresql+psycopg://literec:literec@db:5432/literec
+      ADMIN_SECRET: change-me
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./ML:/app/ML
-      - ./data/processed:/app/data/processed
+      # 호스트(Windows)의 .venv가 컨테이너(Linux)를 가리는 문제 방지 —
+      # backend_venv와 동일한 패턴.
+      - ml_venv:/app/ML/.venv
+      - ./data/processed:/app/data/processed:ro
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      # catalog_loaded/profiles_loaded가 둘 다 true가 될 때까지 backend가 기다리게 한다.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import json,sys,urllib.request; d=json.loads(urllib.request.urlopen('http://localhost:8001/health').read()); sys.exit(0 if d.get('catalog_loaded') and d.get('profiles_loaded') else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+
+volumes:
+  ml_venv:
+  hf_cache:
 ```
 
 **3-2. 통합 테스트 확인 항목**
 
 ```bash
-docker-compose up
+docker compose up --build
 
-# 1. ML 서버 카탈로그 빌드 완료 확인 (로그에서 확인)
+# 1. ml 서비스가 healthy가 될 때까지 대기 (docker compose ps)
 # 2. 헬스체크
 curl localhost:8001/health
-# → {"catalog_loaded": true, "profiles_loaded": true}
+# → {"status":"ok","catalog_loaded": true, "profiles_loaded": true}
 
 # 3. 온보딩 → 추천 흐름
 # (1) 회원가입 + 로그인
 # (2) 온보딩 완료 → ML 서버 /profile/build 호출 확인
 # (3) GET /api/recommendations → 실제 책 데이터 반환 확인
+# (4) 기존에 온보딩을 마친 계정으로도 확인 — ml 컨테이너를 재기동해도
+#     DATABASE_URL 덕분에 추천이 빈 배열로 떨어지지 않는지가 핵심 검증 포인트
 
-# 4. 이벤트 로깅
+# 4. 이벤트 로깅 — book_id는 정수가 아니라 books.isbn(문자열)
 curl -X POST localhost:8000/api/events \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"book_id": 1, "event_type": "click", "source": "home", "rank": 1}'
+  -d '{"book_id": "9788937460449", "event_type": "click", "source": "home", "rank": 1}'
 # DB recommendation_events 테이블에 행 추가 확인
 ```
 
 **체크리스트**
 ```
-[ ] 3-1: docker-compose.yml ml 서비스 추가
-[ ] 3-2: docker-compose up 후 전체 흐름 확인
-         ├── health 정상
-         ├── 온보딩 → 추천 결과 반환
+[ ] 3-1: docker-compose.yml ml 서비스 추가 (DATABASE_URL/venv 볼륨/헬스체크 포함)
+[ ] 3-2: docker compose up --build 후 전체 흐름 확인
+         ├── ml healthy, health 정상
+         ├── 온보딩 → 추천 결과 반환 (재기동 후에도 유지)
          └── 이벤트 로깅 DB 적재 확인
 ```
 
@@ -1450,7 +1487,7 @@ EC2에서 실제 시간 측정 후 조정.
 K8s Secret으로 관리하고 CronJob Pod에만 환경변수로 주입.
 
 **is_processed / created_at 초기값**  
-기존 LLM 생성 리뷰 440건의 `is_processed=TRUE`, `created_at=2026-07-26 23:28:11+09`(커밋 시각) 설정은 마이그레이션이 아니라 **`backend/scripts/seed_data.py` 자체에서 명시적으로** 처리한다(STEP 0-1b 참고) — 이미 잘못 적재된 행이 있다면 그 섹션의 backfill SQL을 1회 실행.
+기존 LLM 생성 리뷰 440건의 `is_processed=TRUE`, `created_at=2026-07-26 23:28:11+09`(커밋 시각) 설정은 마이그레이션이 아니라 **`backend/scripts/seed.py`(정본) 자체에서 명시적으로** 처리한다(STEP 0-1b 참고) — 이미 잘못 적재된 행이 있다면 그 섹션의 backfill SQL을 1회 실행. `seed_data.py`는 동일 역할의 중복 스크립트였으나 `book_aspects`를 채우지 않고 관리 포인트가 두 개로 나뉘는 문제가 있어 삭제하고 `seed.py`로 통합했다.
 
 ---
 
@@ -1462,8 +1499,8 @@ STEP 0부터 순서대로 구현에 착수하기 전, 이 문서(작성 시점 �
 
 **원래 전제**: STEP 0이 `created_at`/`is_processed` 두 컬럼을 함께 새로 추가한다고 되어 있었음.
 **실제**: `created_at`은 `0001_initial_schema` 마이그레이션에 이미 있다. 없는 건 `is_processed` 하나뿐.
-**진짜 문제**: 컬럼이 아니라 값 — `seed_data.py`가 440건의 LLM 리뷰를 넣을 때 `created_at`을 지정하지 않아 전부 "시드 스크립트 실행 시각"으로 찍힌다.
-**상태**: 문서 정정 완료(STEP 0-1, 0-1b). `llm_reviews.jsonl` 최초 커밋 시각(`1c96df5`, 2026-07-26 23:28:11+09)으로 명시 설정하도록 시드 스크립트 수정 지시를 추가. 실제 코드 수정은 STEP 0 구현 시 진행.
+**진짜 문제**: 컬럼이 아니라 값 — 시딩 스크립트가 440건의 LLM 리뷰를 넣을 때 `created_at`을 지정하지 않으면 전부 "시드 스크립트 실행 시각"으로 찍힌다.
+**상태**: 문서 정정 및 실제 코드 수정 완료(STEP 0-1, 0-1b). `llm_reviews.jsonl` 최초 커밋 시각(`1c96df5`, 2026-07-26 23:28:11+09)으로 명시 설정하도록 `seed.py`(정본)를 수정. STEP 0 실제 구현 과정에서 같은 역할을 하는 스크립트가 `seed_data.py`/`seed.py` 둘로 갈라져 있었고 이 중 `seed_data.py`만 이 값을 정확히 세팅하고 있던 것을 발견 — `seed.py`로 통합하며 이 로직을 이식하고 `seed_data.py`는 삭제했다(자세한 내용은 STEP 0-1b 정정 노트 참고).
 
 ### B. 프론트엔드는 이미 리뷰 작성일 · XAI 설명을 표시하고 있음
 
@@ -1504,3 +1541,14 @@ STEP 0부터 순서대로 구현에 착수하기 전, 이 문서(작성 시점 �
 - **`Book.identityVectors`(레이더 차트) ↔ `book_aspects` 매핑**: `LiteRec_Backend_ClaudeCode_Brief.md` 9.1에 이미 "미확정, 별도 논의 필요"로 기록되어 있고 추천 파이프라인과 무관 — 손대지 않음.
 - **STEP 8 온라인 임베딩 파이프라인의 5축 구조화 공백**: 구조화 로직 자체(`data/src/llm_review/structure_reviews.py`의 `build_structure_prompt()` + Upstage Solar API 호출)는 이미 있고 초기 440건이 이걸로 만들어졌지만, 사람이 CLI로 수동 실행하는 오프라인 배치 스크립트일 뿐이다. 실사용자가 게시판에 새로 쓰는 리뷰를 같은 5축으로 **자동** 구조화해서 DB/버퍼에 채우는 경로는 어디에도 없다. STEP 8 착수 전 이 로직을 리뷰 1건 단위로 재사용하는 별도 설계 필요 — 이번 정정에서는 코드 스니펫에 TODO만 남겨둠.
 - **`matchedTrait`/`hookLine` 필드의 실제 의미**: `UI_DESIGN_SPEC.md` 5.1 타입에는 있지만 어느 화면에서도 렌더링되지 않는 죽은 필드(확인: `HomePage.tsx`는 `explanation`만 사용). STEP 1-3에서 ML 5축 라벨을 `RADAR_TRAITS` 어휘로 잠정 매핑해 채워 넣었지만, 실제로 화면에 노출하게 되면 매핑을 다시 설계해야 한다.
+
+### G. STEP 3 docker-compose `ml` 서비스 원안이 실제로 깨지는 3곳
+
+STEP 0~2 구현이 끝난 뒤 실제 `docker-compose.yml`/`aspect_based_model.py`/`ML/serving/Dockerfile`을 대조해서 발견했다.
+
+1. **`DATABASE_URL` 누락**: `ensure_profiles_loaded()` → `build_full_profile_index()`(`aspect_based_model.py:162-179`)가 기동 시 백엔드 DB에서 실제 온보딩 유저를 읽어오는데, 기본값 `DEFAULT_DATABASE_URL`이 `localhost:5432`다. 원안의 `ml` 서비스 블록엔 `DATABASE_URL`이 없어 컨테이너 안에서 연결에 실패한다. `load_db_users()`가 이 실패를 `except Exception`으로 조용히 삼키고 빈 리스트를 반환하도록 설계돼 있어(ML 서버가 DB 없이도 기동은 되게 하려는 의도) 에러 로그 외엔 티가 안 나고, "이미 온보딩한 실제 유저가 재기동 후 추천이 안 뜨는" 이전에 로컬에서 고쳤던 문제가 docker-compose 환경에서만 재발한다. `backend`와 동일하게 `db` 서비스를 명시로 가리키도록 고쳤다.
+2. **`.venv` 바인드마운트 충돌**: 원안은 `./ML:/app/ML`을 통째로 마운트한다. 호스트에 이미 Windows용 `ML/.venv`가 있어(`ls`로 확인) 그대로 덮으면 `backend`가 `backend_venv:/app/.venv`로 이미 회피한 것과 동일한 Windows/Linux venv 충돌이 재발한다. `ml_venv:/app/ML/.venv` named volume으로 분리했다(`ML/serving/Dockerfile`이 `cd ML && uv sync`라 venv 위치가 `/app/ML/.venv`).
+3. **헬스체크 없음**: 카탈로그 빌드(`jhgan/ko-sroberta-multitask` 모델 로드 + 리뷰 440건 임베딩 + 클러스터링)에 몇 십 초가 걸린다. `backend`의 `depends_on: db: condition: service_healthy`와 동일한 패턴을 `ml`에도 추가했다 — 이미지에 `curl`이 없어(`python:3.12-slim`) 파이썬으로 `/health`의 `catalog_loaded`/`profiles_loaded`를 직접 확인하는 헬스체크를 썼다.
+
+부가로 HuggingFace 모델(~400MB) 캐시가 없으면 `docker compose up --build` 때마다 재다운로드하므로 `hf_cache` named volume을 추가했다. 문서 STEP 3의 curl 예시도 `book_id`를 정수로 쓰고 있었는데 실제로는 `books.isbn`(문자열)이라 예시를 고쳤다(패턴은 C 항목과 동일).
+**상태**: STEP 3 문서 정정 및 `docker-compose.yml` 반영 완료.
