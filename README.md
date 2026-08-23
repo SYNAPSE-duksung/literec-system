@@ -144,6 +144,8 @@
 ![Upstage](https://img.shields.io/badge/Upstage_Solar-6E56CF?style=for-the-badge)
 ![Perplexity](https://img.shields.io/badge/Perplexity-1F1F1F?style=for-the-badge)
 
+> perplexity는 API 형태가 아닌 서비스 형태로 사용
+
 ### Infra & DevOps
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
