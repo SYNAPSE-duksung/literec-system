@@ -18,7 +18,13 @@ export function SimilarBookByReviewCard({ recommendation, onClick }: SimilarBook
 
   return (
     <Card className="similar-book-card" onClick={() => onClick(book.id)}>
-      <img className="similar-book-card__cover" src={book.coverUrl} alt={book.title} />
+      <img
+        className="similar-book-card__cover"
+        src={book.coverUrl}
+        alt={book.title}
+        loading="lazy"
+        decoding="async"
+      />
       <div className="similar-book-card__info">
         <p className="similar-book-card__title">{book.title}</p>
         <p className="similar-book-card__author">

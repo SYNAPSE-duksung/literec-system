@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      ml: ${{ steps.filter.outputs.ml }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            ml:
+              - 'ML/**'
+              - 'data/processed/**'
+            frontend:
+              - 'app/**'
+
+  deploy-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Build & Push backend
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/literec-backend:latest ./backend
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/literec-backend:latest
+      - name: Deploy to K8s
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          KUBECONFIG=kubeconfig.yaml kubectl rollout restart deployment/backend -n backend
+
+  deploy-ml:
+    needs: changes
+    if: needs.changes.outputs.ml == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Build & Push ml
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/literec-ml:latest -f ML/serving/Dockerfile .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/literec-ml:latest
+      - name: Deploy to K8s
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          KUBECONFIG=kubeconfig.yaml kubectl rollout restart deployment/ml-server -n ml
+
+  deploy-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+      - name: Build & Push frontend
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/literec-frontend:latest ./app
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/literec-frontend:latest
+      - name: Deploy to K8s
+        run: |
+          echo "${{ secrets.KUBECONFIG }}" > kubeconfig.yaml
+          KUBECONFIG=kubeconfig.yaml kubectl rollout restart deployment/frontend -n backend

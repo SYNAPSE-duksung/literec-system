@@ -1,0 +1,73 @@
+# <dockerhub-id>는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-hf-cache
+  namespace: ml
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-server
+  namespace: ml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-server
+  template:
+    metadata:
+      labels:
+        app: ml-server
+    spec:
+      containers:
+      - name: ml-server
+        image: j2nii/literec-ml:latest
+        ports:
+        - containerPort: 8001
+        env:
+        # docker-compose STEP 3에서 겪었던 것과 동일한 문제 — 값이 없으면 컨테이너 안에서는
+        # localhost:5432를 찾다 실패하고, 조용히 빈 프로필로 폴백되어 "온보딩 유저인데
+        # 재기동 후 추천이 빈 배열"이 재발한다. 반드시 채워야 한다.
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: database-url
+        - name: ADMIN_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: admin-secret
+              key: value
+        volumeMounts:
+        # sentence-transformers 모델(jhgan/ko-sroberta-multitask, ~400MB)을 파드가 재기동될
+        # 때마다 다시 받지 않도록 PVC에 캐시를 유지한다(docker-compose의 hf_cache와 동일 목적).
+        - name: hf-cache
+          mountPath: /root/.cache/huggingface
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 60    # 카탈로그 빌드(모델 로드 + 임베딩 + 클러스터링) 대기 — 실측 후 조정
+          periodSeconds: 10
+          failureThreshold: 12
+      volumes:
+      - name: hf-cache
+        persistentVolumeClaim:
+          claimName: ml-hf-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-server
+  namespace: ml
+spec:
+  selector:
+    app: ml-server
+  ports:
+  - port: 8001

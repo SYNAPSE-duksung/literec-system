@@ -9,6 +9,12 @@ class IdentityVector(BaseModel):
     keywords: list[str]
 
 
+class BookAspectsOut(BaseModel):
+    emotionExperience: list[str]
+    likedElements: list[str]
+    dislikedElements: list[str]
+
+
 class BookOut(BaseModel):
     id: str
     title: str
@@ -17,6 +23,7 @@ class BookOut(BaseModel):
     coverUrl: str | None
     synopsis: str | None
     identityVectors: list[IdentityVector]
+    aspects: BookAspectsOut
 
 
 class BookReactionRequest(BaseModel):

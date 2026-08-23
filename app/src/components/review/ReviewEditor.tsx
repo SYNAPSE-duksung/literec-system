@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Review } from '../../types';
 import { EMOTION_OPTIONS } from '../../constants/options';
 import { useCreateReview } from '../../hooks/useCreateReview';
+import { useUpdateReview } from '../../hooks/useUpdateReview';
 import { ToggleChip } from '../common/ToggleChip';
 import { Input } from '../common/Input';
 import { Textarea } from '../common/Textarea';
@@ -10,15 +11,18 @@ import './ReviewEditor.css';
 
 interface ReviewEditorProps {
   bookId: string;
-  onCreated: (review: Review) => void;
+  // 있으면 수정 모드 — 이 리뷰의 기존 내용으로 폼을 채우고, 제출 시 새로 만들지 않고 이 리뷰를 고친다.
+  editingReview?: Review;
+  onSaved: (review: Review) => void;
 }
 
-export function ReviewEditor({ bookId, onCreated }: ReviewEditorProps) {
+export function ReviewEditor({ bookId, editingReview, onSaved }: ReviewEditorProps) {
   const { createReview } = useCreateReview();
-  const [emotion, setEmotion] = useState<string[]>([]);
-  const [liked, setLiked] = useState('');
-  const [disliked, setDisliked] = useState('');
-  const [content, setContent] = useState('');
+  const { updateReview } = useUpdateReview();
+  const [emotion, setEmotion] = useState<string[]>(editingReview?.emotion ?? []);
+  const [liked, setLiked] = useState(editingReview?.liked[0] ?? '');
+  const [disliked, setDisliked] = useState(editingReview?.disliked[0] ?? '');
+  const [content, setContent] = useState(editingReview?.content ?? '');
   const [submitting, setSubmitting] = useState(false);
 
   const toggleEmotion = (value: string) => {
@@ -31,14 +35,16 @@ export function ReviewEditor({ bookId, onCreated }: ReviewEditorProps) {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      const review = await createReview({
-        bookId,
+      const input = {
         content: content.trim(),
         liked: liked.trim() ? [liked.trim()] : [],
         disliked: disliked.trim() ? [disliked.trim()] : [],
         emotion,
-      });
-      onCreated(review);
+      };
+      const review = editingReview
+        ? await updateReview(editingReview.id, input)
+        : await createReview({ bookId, ...input });
+      onSaved(review);
     } finally {
       setSubmitting(false);
     }
@@ -79,7 +85,7 @@ export function ReviewEditor({ bookId, onCreated }: ReviewEditorProps) {
       />
 
       <PrimaryButton disabled={!canSubmit} onClick={handleSubmit}>
-        기록 올리기
+        {editingReview ? '수정 완료' : '기록 올리기'}
       </PrimaryButton>
     </div>
   );

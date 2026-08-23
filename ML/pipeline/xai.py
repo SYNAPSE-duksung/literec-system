@@ -178,6 +178,93 @@ def format_reason(facet: dict) -> str:
     return "이 책과 잘 맞는 취향의 독자들이 있었어요."
 
 
+COLDSTART_FALLBACK_REASON = "아직 쌓인 리뷰는 적지만, 줄거리가 취향과 잘 맞는 책이에요."
+
+# RADAR_TRAITS(app/src/constants/options.ts, backend RADAR_TRAITS와 동일한 5개 UI 표기 값)와
+# ML 5축(AXES)은 서로 다른 어휘 체계라 1:1 매핑이 정의돼 있지 않다. matchedTrait는 현재
+# 어떤 화면에서도 실제로 렌더링되지 않는 필드(UI_DESIGN_SPEC.md 5.1 타입에는 있지만 미사용)이므로,
+# 정확한 취향축 매핑보다 "값이 존재하고 그럴듯하다"는 수준으로 잠정 매핑한다.
+# 화면에 실제로 노출하게 되면 이 매핑을 다시 설계해야 한다.
+AXIS_TO_RADAR_TRAIT = {
+    "좋았던_요소": "몰입감",
+    "정서_경험": "서정성",
+    "소재_및_주제": "현실성",
+    "독서_경험_맥락": "잔잔함",
+}
+
+
+def build_recommendation_explanation(
+    user_vector: np.ndarray,
+    book_id: str,
+    identity: BookIdentity,
+    result: GlobalClusterResult,
+    review_embeddings: dict[str, np.ndarray],
+    reviews_by_id: dict[str, dict],
+) -> dict:
+    """RecommendationOut(hookLine/matchedTrait/explanation)을 채우는 데 필요한 문구를
+    한 번에 만든다. 책에 결이 하나도 없는 순수 콜드스타트 대상은 고정 문구로 대체한다."""
+    facet = None
+    if identity.cluster_vectors:
+        facet = explain_recommendation(
+            user_vector, book_id, identity, result, review_embeddings, reviews_by_id
+        )
+    if facet is None:
+        return {
+            "hook_line": COLDSTART_FALLBACK_REASON,
+            "matched_trait": "잔잔함",
+            "explanation": COLDSTART_FALLBACK_REASON,
+        }
+    reason = format_reason(facet)
+    matched_axis = next(
+        (
+            axis
+            for axis in ["좋았던_요소", "정서_경험", "소재_및_주제", "독서_경험_맥락"]
+            if facet["representative_content"].get(axis)
+        ),
+        None,
+    )
+    return {
+        "hook_line": reason,
+        "matched_trait": AXIS_TO_RADAR_TRAIT.get(matched_axis, "몰입감"),
+        "explanation": reason,
+    }
+
+
+def build_similar_book_explanation(
+    query_vector: np.ndarray,
+    book_id: str,
+    identity: BookIdentity,
+    result: GlobalClusterResult,
+    review_embeddings: dict[str, np.ndarray],
+    reviews_by_id: dict[str, dict],
+) -> dict:
+    """'이 리뷰와 결이 비슷한 후기의 책' 카드용. build_recommendation_explanation과
+    같은 근거(facet)를 쓰지만, 그쪽은 hook_line == explanation(같은 문자열)이라
+    "인용문"과 "이유"를 구분해서 보여줘야 하는 이 화면에는 그대로 못 쓴다.
+    snippet은 대표 리뷰의 축 원문 그대로(프론트가 따옴표로 감싸므로 접두어 없이),
+    reason은 기존 format_reason()의 문구를 그대로 재사용해 홈 화면 XAINote와
+    같은 톤을 유지한다."""
+    facet = None
+    if identity.cluster_vectors:
+        facet = explain_recommendation(
+            query_vector, book_id, identity, result, review_embeddings, reviews_by_id
+        )
+    if facet is None:
+        return {"snippet": COLDSTART_FALLBACK_REASON, "reason": COLDSTART_FALLBACK_REASON}
+
+    content = facet["representative_content"]
+    snippet = next(
+        (
+            content[axis]
+            for axis in ["좋았던_요소", "정서_경험", "소재_및_주제", "독서_경험_맥락"]
+            if content.get(axis)
+        ),
+        COLDSTART_FALLBACK_REASON,
+    )
+    reason = format_reason(facet)
+    return {"snippet": snippet, "reason": reason}
+
+
 if __name__ == "__main__":
     from clustering import global_cluster, compute_book_identities
     from embedding import load_embeddings

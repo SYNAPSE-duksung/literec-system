@@ -5,7 +5,14 @@ export interface Book {
   publisher: string;
   coverUrl: string;
   synopsis: string;
+  // trait/score 매핑(스코어링)은 미확정이라 현재 항상 빈 배열 — LiteRec_Backend_ClaudeCode_Brief.md §9.1
   identityVectors: { trait: string; score: number; keywords: string[] }[];
+  // book_aspects 원본 축 텍스트(정서_경험/좋았던_요소/별로였던_요소) — 스코어링 없이 그대로 노출
+  aspects: {
+    emotionExperience: string[];
+    likedElements: string[];
+    dislikedElements: string[];
+  };
 }
 
 export interface Review {
