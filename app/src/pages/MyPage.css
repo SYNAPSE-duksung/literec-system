@@ -43,8 +43,24 @@
   flex-shrink: 0;
 }
 
-.mypage__logout-btn {
+.mypage__account-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.mypage__logout-btn,
+.mypage__delete-account-btn {
+  width: auto;
+  height: auto;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.mypage__delete-account-btn {
+  color: #b3261e;
 }
 
 .mypage__emotions-editor {

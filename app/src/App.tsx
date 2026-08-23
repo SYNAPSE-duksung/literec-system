@@ -66,6 +66,15 @@ export function App() {
     setScreen({ name: 'login' });
   };
 
+  // 계정 삭제(DELETE /api/users/me)는 MyPage에서 이미 성공적으로 호출한 뒤 이 함수를
+  // 부른다 — 서버 쪽 계정은 이미 없으므로 별도 API 호출 없이 클라이언트 세션만 정리한다.
+  const handleAccountDeleted = () => {
+    clearAuth();
+    setCurrentUser(null);
+    setHistory([]);
+    setScreen({ name: 'login' });
+  };
+
   // 401이 refresh로도 복구되지 않으면(리프레시 쿠키 만료 등) 로그인 화면으로 되돌린다.
   useEffect(() => {
     registerAuthExpiredHandler(() => {
@@ -287,6 +296,7 @@ export function App() {
           onSelectReview={(reviewId) => navigate({ name: 'reviewDetail', reviewId })}
           onViewAll={(listType) => navigate({ name: 'myList', listType })}
           onLogout={handleLogout}
+          onAccountDeleted={handleAccountDeleted}
         />
       )}
 

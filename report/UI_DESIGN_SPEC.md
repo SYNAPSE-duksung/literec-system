@@ -188,6 +188,7 @@ interface SimilarReviewRecommendation {
 | `useUpdateReview()` | `updateReview(reviewId, input)` | 리뷰 수정 제출(2026-08-19 신규), 본인 리뷰만 성공 |
 | `useDeleteReview()` | `deleteReview(reviewId)` | 리뷰 삭제(2026-08-19 신규), 본인 리뷰만 성공 |
 | `useReviewReaction(reviewId)` | `{ myReaction, setReaction }` | 리뷰 좋아요/싫어요 (상호 배타), 리뷰 상세 전용 |
+| `useDeleteAccount()` | `deleteAccount()` | 회원 탈퇴(2026-08-24 신규). 성공 시 계정 삭제 — 내가 쓴 리뷰는 삭제되지 않고 작성자만 사라짐(리뷰 자체는 다른 유저에게도 유용한 컨텐츠이자 추천 모델 학습 데이터라 보존) |
 
 ---
 
@@ -378,6 +379,7 @@ BottomNav (검색 활성)
 BottomNav (마이페이지 활성)
 ```
 - ⚠️ 세 섹션 모두 동일한 규칙: 미리보기는 최대 3개까지만 노출하고, 실제 개수가 3개를 초과할 때만 "전체 보기" 링크를 보여준다. 3개 이하면 링크 없이 있는 만큼만 표시.
+- 프로필 영역 우측에 "로그아웃"과 "회원 탈퇴"(2026-08-24 신규) 버튼을 세로로 나란히 배치한다. "회원 탈퇴"는 확인 다이얼로그(`window.confirm`) 통과 시 `useDeleteAccount()` 호출 → 성공하면 클라이언트 세션을 정리하고 로그인 화면으로 돌아간다(로그아웃과 동일한 정리 로직, 단 서버 쪽 로그아웃 API는 이미 계정이 삭제됐으므로 다시 호출하지 않음).
 
 ### 6.10.1 마이페이지 전체 보기 (`screen.name: "myList", listType`)
 

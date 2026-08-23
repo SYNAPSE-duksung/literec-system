@@ -1,12 +1,20 @@
 import uuid
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import BookReaction, ReviewReaction, User, UserProfile
+from app.models import (
+    BookReaction,
+    RecommendationEvent,
+    RefreshToken,
+    Review,
+    ReviewReaction,
+    User,
+    UserProfile,
+)
 from app.schemas.book import BookReactionsOut
 from app.schemas.user import UserProfileOut, UserProfileUpdate
 from app.security import get_current_user
@@ -72,6 +80,31 @@ async def update_profile(
         print(f"[users] ML /profile/build 호출 실패(user_id={current_user.id}): {exc}")
 
     return _profile_out(current_user.id, profile)
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+def delete_account(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> None:
+    """회원 탈퇴. 리뷰 자체는 다른 유저에게도 유용한 컨텐츠이자 추천 모델의 학습
+    데이터라 삭제하지 않고 작성자만 지운다 — reviews.user_id는 이미 nullable이고
+    llm_generated 리뷰(결-bot)도 이미 이 방식으로 작성자 없이 존재한다."""
+    # synchronize_session=False 필수 — 이 세션에 이미 로드된 Review 객체가 있으면(예:
+    # 방금 리뷰를 쓴 직후 탈퇴하는 경우) review.author 관계 속성이 여전히 current_user를
+    # 가리키고 있어서, 기본 동기화 전략(evaluate)이 컬럼만 None으로 바꿔놔도 뒤이은
+    # commit()의 flush에서 관계가 FK 컬럼을 다시 덮어써 버린다(그러면 아래 유저 삭제가
+    # FK 위반으로 실패한다). synchronize_session=False로 세션 동기화 자체를 건너뛴다.
+    db.query(Review).filter(Review.user_id == current_user.id).update(
+        {"user_id": None}, synchronize_session=False
+    )
+    db.query(ReviewReaction).filter(ReviewReaction.user_id == current_user.id).delete()
+    db.query(BookReaction).filter(BookReaction.user_id == current_user.id).delete()
+    db.query(RecommendationEvent).filter(RecommendationEvent.user_id == current_user.id).delete()
+    db.query(RefreshToken).filter(RefreshToken.user_id == current_user.id).delete()
+    db.query(UserProfile).filter(UserProfile.user_id == current_user.id).delete()
+    db.delete(current_user)
+    db.commit()
 
 
 @router.get("/review-reactions")

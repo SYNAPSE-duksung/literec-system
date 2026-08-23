@@ -3,6 +3,7 @@ import type { MyListType } from '../types';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useBooks } from '../hooks/useBooks';
 import { useReviews } from '../hooks/useReviews';
+import { useDeleteAccount } from '../hooks/useDeleteAccount';
 import { Avatar } from '../components/common/Avatar';
 import { Button } from '../components/common/Button';
 import { ToggleChip } from '../components/common/ToggleChip';
@@ -19,16 +20,38 @@ interface MyPageProps {
   onSelectReview: (reviewId: string) => void;
   onViewAll: (listType: MyListType) => void;
   onLogout: () => void;
+  onAccountDeleted: () => void;
 }
 
-export function MyPage({ accountId, onSelectBook, onSelectReview, onViewAll, onLogout }: MyPageProps) {
+export function MyPage({
+  accountId,
+  onSelectBook,
+  onSelectReview,
+  onViewAll,
+  onLogout,
+  onAccountDeleted,
+}: MyPageProps) {
   const { data: profile, dislikedBookIds, updateProfile } = useUserProfile();
   const { data: books } = useBooks();
   const { data: reviews } = useReviews();
+  const { deleteAccount } = useDeleteAccount();
   const [editingEmotions, setEditingEmotions] = useState(false);
   const [draftEmotions, setDraftEmotions] = useState<string[]>([]);
   const [editingAvoided, setEditingAvoided] = useState(false);
   const [draftAvoided, setDraftAvoided] = useState<string[]>([]);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('정말 탈퇴하시겠어요? 내가 쓴 기록은 남지만 계정은 되돌릴 수 없어요.')) return;
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      onAccountDeleted();
+    } catch {
+      setIsDeletingAccount(false);
+      window.alert('탈퇴에 실패했어요. 잠시 후 다시 시도해주세요.');
+    }
+  };
 
   const likedBooks = books.filter((book) => profile?.likedBookIds.includes(book.id));
   const dislikedBooks = books.filter((book) => dislikedBookIds.includes(book.id));
@@ -108,9 +131,19 @@ export function MyPage({ accountId, onSelectBook, onSelectReview, onViewAll, onL
             </div>
           )}
         </div>
-        <Button variant="text" className="mypage__logout-btn" onClick={onLogout}>
-          로그아웃
-        </Button>
+        <div className="mypage__account-actions">
+          <Button variant="text" className="mypage__logout-btn" onClick={onLogout}>
+            로그아웃
+          </Button>
+          <Button
+            variant="text"
+            className="mypage__delete-account-btn"
+            onClick={handleDeleteAccount}
+            disabled={isDeletingAccount}
+          >
+            {isDeletingAccount ? '탈퇴 중…' : '회원 탈퇴'}
+          </Button>
+        </div>
       </div>
 
       {editingEmotions && (
