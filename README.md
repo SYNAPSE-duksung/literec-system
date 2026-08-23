@@ -187,6 +187,8 @@ npm run dev
 
 단일 EC2 인스턴스 위에 경량 Kubernetes(k3s, Traefik 인그레스 내장)로 배포되어 있습니다.
 
+<img src="docs/diagrams/infra-deployment.svg" alt="인프라 배포 구조: GitHub push → GitHub Actions가 변경된 경로만 감지해 Docker 이미지를 빌드/푸시하고 kubectl rollout restart로 배포. 단일 EC2(t3.small) 위 k3s 클러스터 안에서 Traefik Ingress가 backend/frontend로 라우팅하고, backend는 postgres·ml-server를 호출하며, ml 네임스페이스에는 매일 새벽 2시 신규 리뷰를 구조화하는 structure-reviews CronJob과 매주 일요일 새벽 3시 카탈로그를 재계산하는 weekly-rebuild CronJob이 함께 떠 있다" width="100%">
+
 ```
 Ingress (Traefik)
  ├─ /api  → backend  Service (namespace: backend)
@@ -196,11 +198,13 @@ namespace: data     — postgres (StatefulSet, PVC 5Gi)
 namespace: backend  — backend, frontend (Deployment, replicas=1)
 namespace: ml       — ml-server (Deployment, HF 모델 캐시 PVC 2Gi)
                        + structure-reviews (CronJob, 매일 새벽 2시)
+                       + weekly-rebuild (CronJob, 매주 일요일 새벽 3시)
 ```
 
 - **CI/CD**: `main` 브랜치 push 시 GitHub Actions가 변경된 경로(`backend/**`, `ML/**`, `app/**`)만 감지해 Docker 이미지를 빌드하고 Docker Hub(`j2nii/literec-{backend,frontend,ml}`)에 푸시한 뒤, `kubectl rollout restart`로 무중단 배포합니다.
 - **시드 데이터**: 저장소 루트의 `data/`는 이미지에 포함되지 않아 EC2 노드 파일시스템(`hostPath`)에 별도로 올려두고, `seed-data` Job이 `alembic upgrade head` + `scripts/seed.py`를 실행합니다.
-- **신규 리뷰 반영**: `structure-reviews` CronJob이 매일 새벽 2시 게시판에 쌓인 신규 리뷰를 Upstage로 구조화합니다.
+- **신규 리뷰 반영**: `structure-reviews` CronJob이 매일 새벽 2시 게시판에 쌓인 신규 리뷰를 Upstage로 구조화해 `review_axes`에 저장합니다.
+- **카탈로그 재계산**: `weekly-rebuild` CronJob이 매주 일요일 새벽 3시 `POST /admin/rebuild-catalog`를 호출해, 그 주에 새로 구조화된 리뷰까지 포함해 클러스터링을 다시 계산하고 ML 서버 캐시를 갱신합니다.
 - **모니터링**: Grafana 대시보드 구성.
 
 ## 평가 결과
