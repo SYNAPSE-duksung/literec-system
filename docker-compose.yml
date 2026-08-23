@@ -1,0 +1,36 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: literec
+      POSTGRES_PASSWORD: literec
+      POSTGRES_DB: literec
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U literec"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://literec:literec@db:5432/literec
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      # 호스트(Windows)의 .venv가 컨테이너(Linux)로 그대로 마운트되며 매번
+      # venv를 재생성하는 문제를 막기 위해 .venv만 별도 named volume으로 분리한다.
+      - backend_venv:/app/.venv
+
+volumes:
+  db_data:
+  backend_venv:

@@ -1,14 +1,44 @@
 ## 개발 진행 과정에서 추가 ##
 
+# 로컬 전용 설정/민감정보
+.claude/settings.local.json
+.env.local
+.env.*.local
+
+# 로컬 DB 파일 (Postgres는 docker volume 사용, 실수로 로컬에 생긴 DB 덤프/스크래치 DB 방지용)
+*.sqlite
+*.sqlite3
+*.sqlite3-journal
+*.db
+
+# docker-compose 로컬 오버라이드 (개인 환경별 설정, 공유 저장소에 올리지 않음)
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# 빌드 캐시 / 임시 / 백업 파일
+*.tsbuildinfo
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+
+# 에디터
+.vscode/
+
 # data
-data/processed/*
 data/raw/top-list/*
 !data/processed/.gitkeep
 !data/raw/.gitkeep
+data/raw/*
 !data/raw/top-list/.gitkeep
+!data/processed/prompts/*
 
 # 다음 항목은 최종 결정된 도서 항목이므로 원격 저장소에 업로드
 !data/processed/final_book_list_88.csv
+!data/processed/books_naver.jsonl
+!data/processed/llm_reviews.jsonl
+!data/processed/structured_reviews.jsonl
 
 
 # Created by https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
@@ -243,6 +273,7 @@ sketch
 [Ll]ib64
 [Ll]ocal
 [Ss]cripts
+!backend/scripts/
 pyvenv.cfg
 pip-selfcheck.json
 
@@ -273,3 +304,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/venv,windows,macos,python,react
+
+# 위쪽 Python venv용 lib/[Ll]ib 규칙들이 프론트 소스 디렉터리(app/src/lib/)까지
+# 가려버려서 맨 뒤(모든 규칙 이후)에 예외로 다시 포함시킨다.
+!app/src/lib/
