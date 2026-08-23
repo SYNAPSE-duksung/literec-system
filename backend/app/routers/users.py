@@ -66,10 +66,10 @@ async def update_profile(
                     "preferred_emotions": profile.preferred_emotions,
                     "avoided_traits": profile.avoided_traits,
                 },
-                timeout=10.0,
+                timeout=30.0,
             )
-    except httpx.HTTPError:
-        pass
+    except httpx.HTTPError as exc:
+        print(f"[users] ML /profile/build 호출 실패(user_id={current_user.id}): {exc}")
 
     return _profile_out(current_user.id, profile)
 
