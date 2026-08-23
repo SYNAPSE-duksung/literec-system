@@ -1,0 +1,28 @@
+# <dockerhub-id>는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+# admin-secret은 ml-server 배포 때 이미 ml 네임스페이스에 만들어져 있으므로 재사용한다.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: weekly-rebuild
+  namespace: ml
+spec:
+  schedule: "0 3 * * 0"   # 매주 일요일 새벽 3시
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: weekly-rebuild
+            image: <dockerhub-id>/literec-ml:latest
+            command: ["uv", "run", "--project", "ML", "python", "-m", "ML.pipeline.cronjobs.weekly_rebuild"]
+            env:
+            - name: ML_SERVER_URL
+              value: "http://ml-server.ml.svc.cluster.local:8001"
+            - name: ADMIN_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: admin-secret
+                  key: value
