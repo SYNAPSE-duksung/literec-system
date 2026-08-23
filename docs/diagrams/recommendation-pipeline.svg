@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 350" role="img" aria-label="정적 시드 리뷰 440건과, 게시판에 실사용자가 쓴 리뷰가 매일 새벽 2시 CronJob으로 구조화된 결과가 합쳐져 임베딩되고, KMeans로 전역 클러스터링된 뒤 콜드스타트로 보강된다. 온보딩에서 만든 유저 프로필 벡터와 이 책 아이덴티티를 max-similarity로 매칭해 recommend()가 book_id 리스트를 반환하고, 매칭에 쓰인 결의 원문 리뷰가 그대로 XAI 추천 카드의 이유가 된다.">
+  <defs>
+    <marker id="pipeArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow-fill" />
+    </marker>
+  </defs>
+  <style>
+    text { font-family: 'IBM Plex Mono', 'D2Coding', ui-monospace, monospace; }
+    .card-ink { fill: #1a1a1a; }
+    .card-accent { fill: #3d5a80; }
+    .card-body { fill: #ffffff; }
+    .card-line { stroke: #e5e5e0; }
+    .card-accent-line { stroke: #3d5a80; }
+    .label-on-dark { fill: #fafaf8; }
+    .label-on-accent { fill: #ffffff; }
+    .label-muted { fill: #767671; }
+    .edge { stroke: #767671; fill: none; }
+    .edge-label { fill: #767671; }
+    .arrow-fill { fill: #767671; }
+    .cron-head { fill: #c1483d; }
+    .cron-border { stroke: #c1483d; }
+    @media (prefers-color-scheme: dark) {
+      .card-ink { fill: #ede9e2; }
+      .card-accent { fill: #7fa2c9; }
+      .card-body { fill: #202226; }
+      .card-line { stroke: #34363a; }
+      .card-accent-line { stroke: #7fa2c9; }
+      .label-on-dark { fill: #17181a; }
+      .label-on-accent { fill: #10161d; }
+      .label-muted { fill: #9b9890; }
+      .edge { stroke: #9b9890; }
+      .edge-label { fill: #9b9890; }
+      .arrow-fill { fill: #9b9890; }
+      .cron-head { fill: #e0796d; }
+      .cron-border { stroke: #e0796d; }
+    }
+  </style>
+
+  <!-- 화살표 -->
+  <g class="edge" stroke-width="1.4">
+    <path d="M105,80 L105,140" marker-end="url(#pipeArrow)" />
+    <path d="M390,55 L420,55" marker-end="url(#pipeArrow)" />
+    <path d="M515,80 L515,112 L95,112 L95,140" marker-end="url(#pipeArrow)" />
+    <path d="M170,167 L196,167" marker-end="url(#pipeArrow)" />
+    <path d="M370,167 L396,167" marker-end="url(#pipeArrow)" />
+    <path d="M570,167 L596,167" marker-end="url(#pipeArrow)" />
+    <path d="M770,167 L796,167" marker-end="url(#pipeArrow)" />
+    <path d="M930,167 L956,167" marker-end="url(#pipeArrow)" />
+    <path d="M190,305 L220,305" marker-end="url(#pipeArrow)" />
+    <path d="M315,280 L315,240 L685,240 L685,199" marker-end="url(#pipeArrow)" />
+  </g>
+  <g font-size="9.5px" class="edge-label">
+    <text x="522" y="102" text-anchor="middle">440건 + DB 구조화 결과 concat</text>
+    <text x="500" y="270" text-anchor="middle">선호/기피 벡터</text>
+  </g>
+
+  <g font-weight="600">
+    <!-- A: 정적 시드 리뷰 -->
+    <rect x="20" y="30" width="170" height="50" rx="8" class="card-body" />
+    <path d="M20,38 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-ink" />
+    <rect x="20" y="30" width="170" height="50" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="105" y="44" text-anchor="middle" font-size="10.5" class="label-on-dark">정적 시드 리뷰</text>
+    <text x="105" y="65" text-anchor="middle" font-size="9" font-weight="400" class="label-muted">structured_reviews.jsonl · 440건</text>
+
+    <!-- B: 게시판 실사용 리뷰 -->
+    <rect x="220" y="30" width="170" height="50" rx="8" class="card-body" />
+    <path d="M220,38 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-ink" />
+    <rect x="220" y="30" width="170" height="50" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="305" y="44" text-anchor="middle" font-size="10.5" class="label-on-dark">게시판 실사용 리뷰</text>
+    <text x="305" y="65" text-anchor="middle" font-size="9" font-weight="400" class="label-muted">reviews · is_processed=false</text>
+
+    <!-- C: CronJob 구조화 -->
+    <rect x="420" y="30" width="190" height="50" rx="8" class="card-body" />
+    <path d="M420,38 a8,8 0 0 1 8,-8 h174 a8,8 0 0 1 8,8 v12 h-190 z" class="cron-head" />
+    <rect x="420" y="30" width="190" height="50" rx="8" fill="none" class="cron-border" stroke-width="1.5" stroke-dasharray="5 3" />
+    <text x="515" y="44" text-anchor="middle" font-size="10.5" class="label-on-accent">구조화 CronJob</text>
+    <text x="515" y="65" text-anchor="middle" font-size="9" font-weight="400" class="label-muted">매일 새벽 2시 · Upstage → review_axes</text>
+
+    <!-- D: 임베딩 -->
+    <rect x="20" y="140" width="150" height="55" rx="8" class="card-body" />
+    <path d="M20,148 a8,8 0 0 1 8,-8 h134 a8,8 0 0 1 8,8 v12 h-150 z" class="card-accent" />
+    <rect x="20" y="140" width="150" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="95" y="154" text-anchor="middle" font-size="10.5" class="label-on-accent">임베딩</text>
+    <text x="95" y="173" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">ko-sroberta</text>
+    <text x="95" y="185" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">-multitask</text>
+
+    <!-- E: 전역 클러스터링 -->
+    <rect x="200" y="140" width="170" height="55" rx="8" class="card-body" />
+    <path d="M200,148 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-accent" />
+    <rect x="200" y="140" width="170" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="285" y="154" text-anchor="middle" font-size="10.5" class="label-on-accent">전역 클러스터링</text>
+    <text x="285" y="173" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">KMeans · k=30</text>
+    <text x="285" y="185" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">→ 책마다 여러 "결"</text>
+
+    <!-- F: 콜드스타트 보강 -->
+    <rect x="400" y="140" width="170" height="55" rx="8" class="card-body" />
+    <path d="M400,148 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-accent" />
+    <rect x="400" y="140" width="170" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="485" y="154" text-anchor="middle" font-size="10.5" class="label-on-accent">콜드스타트 보강</text>
+    <text x="485" y="173" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">줄거리 임베딩</text>
+    <text x="485" y="185" text-anchor="middle" font-size="8.7" font-weight="400" class="label-muted">리뷰 少 책만 슬라이딩</text>
+
+    <!-- G: 매칭 -->
+    <rect x="600" y="140" width="170" height="55" rx="8" class="card-body" />
+    <path d="M600,148 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-accent" />
+    <rect x="600" y="140" width="170" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="685" y="154" text-anchor="middle" font-size="10.5" class="label-on-accent">매칭</text>
+    <text x="685" y="173" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">score = max_sim(선호)</text>
+    <text x="685" y="185" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">− λ·max_sim(기피)</text>
+
+    <!-- H: recommend() -->
+    <rect x="800" y="140" width="130" height="55" rx="8" class="card-body" />
+    <path d="M800,148 a8,8 0 0 1 8,-8 h114 a8,8 0 0 1 8,8 v12 h-130 z" class="card-ink" />
+    <rect x="800" y="140" width="130" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="865" y="154" text-anchor="middle" font-size="10.5" class="label-on-dark">recommend()</text>
+    <text x="865" y="173" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">user_id, k</text>
+    <text x="865" y="185" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">→ book_id 리스트</text>
+
+    <!-- I: XAI 추천 카드 -->
+    <rect x="960" y="140" width="170" height="55" rx="8" class="card-body" />
+    <path d="M960,148 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-ink" />
+    <rect x="960" y="140" width="170" height="55" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="1045" y="154" text-anchor="middle" font-size="10.5" class="label-on-dark">XAI 추천 카드</text>
+    <text x="1045" y="173" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">매칭된 결의</text>
+    <text x="1045" y="185" text-anchor="middle" font-size="8.4" font-weight="400" class="label-muted">medoid 리뷰 = 추천 이유</text>
+
+    <!-- J: 온보딩 -->
+    <rect x="20" y="280" width="170" height="50" rx="8" class="card-body" />
+    <path d="M20,288 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v12 h-170 z" class="card-ink" />
+    <rect x="20" y="280" width="170" height="50" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="105" y="294" text-anchor="middle" font-size="10.5" class="label-on-dark">온보딩</text>
+    <text x="105" y="315" text-anchor="middle" font-size="9" font-weight="400" class="label-muted">선호 정서 · 기피 요소 태그</text>
+
+    <!-- K: 유저 프로필 벡터화 -->
+    <rect x="220" y="280" width="190" height="50" rx="8" class="card-body" />
+    <path d="M220,288 a8,8 0 0 1 8,-8 h174 a8,8 0 0 1 8,8 v12 h-190 z" class="card-accent" />
+    <rect x="220" y="280" width="190" height="50" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="315" y="294" text-anchor="middle" font-size="10.5" class="label-on-accent">유저 프로필 벡터화</text>
+    <text x="315" y="315" text-anchor="middle" font-size="9" font-weight="400" class="label-muted">build_single_user_profile()</text>
+  </g>
+</svg>

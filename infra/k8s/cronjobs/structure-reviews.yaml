@@ -1,4 +1,4 @@
-# <dockerhub-id>는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
+# j2nii는 실제 Docker Hub 계정 Username으로 바꿔서 적용하세요.
 #
 # 실행 전 upstage-secret을 ml 네임스페이스에 먼저 만들어야 한다(값은 커밋하지 않음):
 #   kubectl create secret generic upstage-secret -n ml --from-literal=api-key='<Upstage API 키>'
@@ -17,7 +17,7 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: structure-reviews
-            image: <dockerhub-id>/literec-ml:latest
+            image: j2nii/literec-ml:latest
             command: ["uv", "run", "--project", "ML", "python", "-m", "ML.pipeline.cronjobs.structure_new_reviews"]
             env:
             - name: DATABASE_URL

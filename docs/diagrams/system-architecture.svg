@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1030 340" role="img" aria-label="클라이언트에서 시작한 요청이 routers를 거쳐, 공유 로직이면 services를 경유하고 단순 조회면 곧장 models로 가서 db.py를 통해 Postgres에 닿는 구조. routers는 별도로 httpx를 통해 외부 ML 서버도 직접 호출한다.">
+  <defs>
+    <marker id="archArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="arrow-fill" />
+    </marker>
+  </defs>
+  <style>
+    text { font-family: 'IBM Plex Mono', 'D2Coding', ui-monospace, monospace; }
+    .card-ink { fill: #1a1a1a; }
+    .card-accent { fill: #3d5a80; }
+    .card-body { fill: #ffffff; }
+    .card-line { stroke: #e5e5e0; }
+    .card-accent-line { stroke: #3d5a80; }
+    .label-on-dark { fill: #fafaf8; }
+    .label-on-accent { fill: #ffffff; }
+    .label-muted { fill: #767671; }
+    .label-title { fill: #1a1a1a; }
+    .edge { stroke: #767671; fill: none; }
+    .edge-label { fill: #767671; }
+    .arrow-fill { fill: #767671; }
+    .ml-border { stroke: #c1483d; }
+    .ml-head { fill: #c1483d; }
+    @media (prefers-color-scheme: dark) {
+      .card-ink { fill: #ede9e2; }
+      .card-accent { fill: #7fa2c9; }
+      .card-body { fill: #202226; }
+      .card-line { stroke: #34363a; }
+      .card-accent-line { stroke: #7fa2c9; }
+      .label-on-dark { fill: #17181a; }
+      .label-on-accent { fill: #10161d; }
+      .label-muted { fill: #9b9890; }
+      .label-title { fill: #ede9e2; }
+      .edge { stroke: #9b9890; }
+      .edge-label { fill: #9b9890; }
+      .arrow-fill { fill: #9b9890; }
+      .ml-border { stroke: #e0796d; }
+      .ml-head { fill: #e0796d; }
+    }
+  </style>
+
+  <g class="edge" stroke-width="1.4">
+    <path d="M150,166 L206,166" marker-end="url(#archArrow)" />
+    <path d="M360,166 L606,166" marker-end="url(#archArrow)" />
+    <path d="M285,140 L285,56 L326,56" marker-end="url(#archArrow)" />
+    <path d="M500,56 L685,56 L685,136" marker-end="url(#archArrow)" />
+    <path d="M760,166 L826,166" marker-end="url(#archArrow)" />
+    <path d="M285,192 L285,246" marker-end="url(#archArrow)" />
+  </g>
+  <g font-size="10px" class="edge-label">
+    <text x="178" y="158" text-anchor="middle">HTTP 요청</text>
+    <text x="483" y="158" text-anchor="middle">단순 조회는 직접</text>
+    <text x="296" y="100" text-anchor="middle">공유 로직</text>
+    <text x="592" y="48" text-anchor="middle">(2곳 이상)</text>
+    <text x="793" y="158" text-anchor="middle">SQLAlchemy</text>
+    <text x="300" y="222" text-anchor="middle">httpx</text>
+    <text x="300" y="234" text-anchor="middle">(외부 프로세스)</text>
+  </g>
+
+  <g font-weight="600">
+    <!-- client -->
+    <rect x="20" y="140" width="130" height="52" rx="8" class="card-body" />
+    <path d="M20,148 a8,8 0 0 1 8,-8 h114 a8,8 0 0 1 8,8 v14 h-130 z" class="card-ink" />
+    <rect x="20" y="140" width="130" height="52" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="85" y="155" text-anchor="middle" font-size="11" class="label-on-dark">클라이언트</text>
+    <text x="85" y="177" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">React 앱 (:5173)</text>
+
+    <!-- routers -->
+    <rect x="210" y="140" width="150" height="52" rx="8" class="card-body" />
+    <path d="M210,148 a8,8 0 0 1 8,-8 h134 a8,8 0 0 1 8,8 v14 h-150 z" class="card-accent" />
+    <rect x="210" y="140" width="150" height="52" rx="8" fill="none" class="card-accent-line" stroke-width="1.8" />
+    <text x="285" y="155" text-anchor="middle" font-size="11" class="label-on-accent">routers/*</text>
+    <text x="285" y="177" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">HTTP 계약만 담당</text>
+
+    <!-- services -->
+    <rect x="330" y="30" width="170" height="52" rx="8" class="card-body" />
+    <path d="M330,38 a8,8 0 0 1 8,-8 h154 a8,8 0 0 1 8,8 v14 h-170 z" class="card-accent" />
+    <rect x="330" y="30" width="170" height="52" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="415" y="45" text-anchor="middle" font-size="11" class="label-on-accent">services/*</text>
+    <text x="415" y="67" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">여러 라우터가 공유</text>
+
+    <!-- models -->
+    <rect x="610" y="140" width="150" height="52" rx="8" class="card-body" />
+    <path d="M610,148 a8,8 0 0 1 8,-8 h134 a8,8 0 0 1 8,8 v14 h-150 z" class="card-accent" />
+    <rect x="610" y="140" width="150" height="52" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="685" y="155" text-anchor="middle" font-size="11" class="label-on-accent">models/*</text>
+    <text x="685" y="177" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">SQLAlchemy ORM</text>
+
+    <!-- db -->
+    <rect x="830" y="140" width="180" height="52" rx="8" class="card-body" />
+    <path d="M830,148 a8,8 0 0 1 8,-8 h164 a8,8 0 0 1 8,8 v14 h-180 z" class="card-ink" />
+    <rect x="830" y="140" width="180" height="52" rx="8" class="card-line" fill="none" stroke-width="1.5" />
+    <text x="920" y="155" text-anchor="middle" font-size="11" class="label-on-dark">db.py → Postgres</text>
+    <text x="920" y="177" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">get_db() 세션 주입</text>
+
+    <!-- ml (외부 프로세스, 점선) -->
+    <rect x="210" y="250" width="550" height="52" rx="8" class="card-body" />
+    <path d="M210,258 a8,8 0 0 1 8,-8 h534 a8,8 0 0 1 8,8 v14 h-550 z" class="ml-head" />
+    <rect x="210" y="250" width="550" height="52" rx="8" fill="none" class="ml-border" stroke-width="1.5" stroke-dasharray="5 3" />
+    <text x="485" y="265" text-anchor="middle" font-size="11" class="label-on-accent">ML 서버 (:8001)</text>
+    <text x="485" y="287" text-anchor="middle" font-size="9.5" font-weight="400" class="label-muted">별도 FastAPI 프로세스 — 엔드포인트마다 장애 정책이 다름</text>
+  </g>
+</svg>
