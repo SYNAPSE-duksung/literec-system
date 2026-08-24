@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -6,12 +7,26 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import get_db
-from app.models import Review, User
+from app.models import Review, SimilarBooksCache, User
 from app.schemas.recommendation import RecommendationOut, SimilarReviewRecommendationOut
 from app.security import get_current_user
 from app.services import book_service
 
 router = APIRouter(prefix="/api", tags=["recommendations"])
+
+# 캐시된 유사 리뷰 결과의 유효 기간 — 카탈로그가 주간 재계산(weekly-rebuild CronJob)되므로
+# 그 주기에 맞춰 캐시도 자연스럽게 갱신되게 한다.
+SIMILAR_BOOKS_CACHE_TTL = timedelta(days=7)
+
+
+def _save_similar_books_cache(db: Session, review_id: uuid.UUID, results: list[dict]) -> None:
+    row = db.get(SimilarBooksCache, review_id)
+    if row is None:
+        row = SimilarBooksCache(review_id=review_id)
+        db.add(row)
+    row.results = results
+    row.computed_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 @router.get("/recommendations", response_model=list[RecommendationOut])
@@ -68,35 +83,45 @@ async def get_similar_books_for_review(
     이 리뷰와 결이 비슷한 책을 찾는다. UI_DESIGN_SPEC.md §6.8 규칙대로 원 리뷰가
     속한 도서(isbn)는 결과에서 제외한다(ML 쪽에서 exclude_book_id로 처리).
 
+    ML의 임베딩 계산은 요청마다 실시간으로 돌아 10초 안팎이 걸리므로(캐시 미스 시),
+    review_id 기준으로 결과를 DB(similar_books_cache)에 캐싱해 재조회는 즉시 응답한다.
+    캐시가 없을 때만 ML을 호출하며, 이때는 타임아웃을 넉넉히 잡는다(과거 10초 타임아웃이
+    실제 계산 시간보다 짧아 매번 빈 목록으로 조용히 대체되던 버그가 있었다).
+
     이 섹션은 화면의 보조 섹션이라(프론트가 isError를 소비하지 않음) ML 장애
     시에도 원래 더미 구현과 같은 "절대 실패하지 않는" 계약을 유지한다 — 503 대신
-    빈 목록을 반환해 기존 빈 상태 문구("아직 비슷한 후기를 찾지 못했어요")로
-    자연스럽게 대체되게 한다.
+    빈 목록(또는 있으면 오래된 캐시)을 반환해 기존 빈 상태 문구로 자연스럽게 대체되게 한다.
     """
     review = db.get(Review, review_id)
     if review is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "리뷰를 찾을 수 없습니다.")
 
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.post(
-                f"{settings.ml_server_url}/similar-books",
-                json={
-                    "isbn": review.isbn,
-                    "emotion_tags": review.emotion_tags,
-                    "liked_points": review.liked_points,
-                    "disliked_points": review.disliked_points,
-                    "content": review.content,
-                    "k": n,
-                },
-                timeout=10.0,
-            )
-            resp.raise_for_status()
-            similar = resp.json()  # [{book_id, snippet, reason}, ...]
-        except httpx.HTTPError:
-            return []
-        except (ValueError, KeyError, TypeError):
-            return []
+    cache_row = db.get(SimilarBooksCache, review_id)
+    now = datetime.now(timezone.utc)
+    if cache_row is not None and now - cache_row.computed_at < SIMILAR_BOOKS_CACHE_TTL:
+        similar = cache_row.results
+    else:
+        async with httpx.AsyncClient() as client:
+            try:
+                resp = await client.post(
+                    f"{settings.ml_server_url}/similar-books",
+                    json={
+                        "isbn": review.isbn,
+                        "emotion_tags": review.emotion_tags,
+                        "liked_points": review.liked_points,
+                        "disliked_points": review.disliked_points,
+                        "content": review.content,
+                        "k": n,
+                    },
+                    timeout=30.0,
+                )
+                resp.raise_for_status()
+                similar = resp.json()  # [{book_id, snippet, reason}, ...]
+                _save_similar_books_cache(db, review_id, similar)
+            except httpx.HTTPError:
+                similar = cache_row.results if cache_row is not None else []
+            except (ValueError, KeyError, TypeError):
+                similar = cache_row.results if cache_row is not None else []
 
     books_by_isbn = {
         b.isbn: b

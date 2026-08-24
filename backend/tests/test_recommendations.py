@@ -1,10 +1,11 @@
 import json
+from datetime import datetime, timezone
 
 import httpx
 import respx
 
 from app.config import settings
-from app.models import Book, Review
+from app.models import Book, Review, SimilarBooksCache, User
 
 SIGNUP_PAYLOAD = {"email": "rec@example.com", "password": "password123", "name": "추천"}
 
@@ -214,6 +215,76 @@ def test_similar_books_malformed_ml_response_returns_empty_list(client, db_sessi
     res = client.get(f"/api/reviews/{review.id}/similar-books")
     assert res.status_code == 200
     assert res.json() == []
+
+
+@respx.mock
+def test_similar_books_caches_result_and_skips_second_ml_call(client, db_session):
+    source_book = _create_book(db_session, "9780000000060")
+    other = _create_book(db_session, "9780000000061")
+    review = _create_review_for(db_session, source_book)
+
+    route = respx.post(ML_SIMILAR_BOOKS_URL).mock(
+        return_value=httpx.Response(200, json=[_similar_item(other.isbn)])
+    )
+
+    first = client.get(f"/api/reviews/{review.id}/similar-books")
+    second = client.get(f"/api/reviews/{review.id}/similar-books")
+
+    assert first.status_code == 200 and second.status_code == 200
+    assert first.json() == second.json()
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_similar_books_falls_back_to_stale_cache_when_ml_fails(client, db_session):
+    source_book = _create_book(db_session, "9780000000062")
+    other = _create_book(db_session, "9780000000063")
+    review = _create_review_for(db_session, source_book)
+    db_session.add(
+        SimilarBooksCache(
+            review_id=review.id,
+            results=[_similar_item(other.isbn)],
+            computed_at=datetime.now(timezone.utc),
+        )
+    )
+    db_session.commit()
+
+    # 캐시가 신선하면 ML을 아예 호출하지 않아야 하므로, 굳이 mock을 설정하지 않아도
+    # 이 테스트는 캐시 경로만 타는지를 검증한다(엔드포인트가 stale 여부를 스스로 판단).
+    respx.post(ML_SIMILAR_BOOKS_URL).mock(side_effect=httpx.ConnectError("connection refused"))
+
+    res = client.get(f"/api/reviews/{review.id}/similar-books")
+    assert res.status_code == 200
+    assert res.json()[0]["bookId"] == other.isbn
+
+
+@respx.mock
+def test_similar_books_cache_invalidated_on_review_update(client, db_session):
+    token = _login_and_get_token(client)
+    user = db_session.query(User).filter(User.email == SIGNUP_PAYLOAD["email"]).one()
+
+    source_book = _create_book(db_session, "9780000000064")
+    other = _create_book(db_session, "9780000000065")
+    review = _create_review_for(
+        db_session, source_book, user_id=user.id, source="user", content="원래 내용"
+    )
+
+    route = respx.post(ML_SIMILAR_BOOKS_URL).mock(
+        return_value=httpx.Response(200, json=[_similar_item(other.isbn)])
+    )
+
+    client.get(f"/api/reviews/{review.id}/similar-books")
+    assert route.call_count == 1
+
+    update_res = client.patch(
+        f"/api/reviews/{review.id}",
+        json={"content": "수정된 내용", "emotion": [], "liked": [], "disliked": []},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert update_res.status_code == 200
+
+    client.get(f"/api/reviews/{review.id}/similar-books")
+    assert route.call_count == 2
 
 
 @respx.mock

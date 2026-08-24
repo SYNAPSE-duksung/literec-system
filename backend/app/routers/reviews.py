@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.db import get_db
-from app.models import Book, Review, ReviewReaction, User
+from app.models import Book, Review, ReviewReaction, SimilarBooksCache, User
 from app.schemas.review import ReviewCreate, ReviewOut, ReviewReactionRequest, ReviewUpdate
 from app.security import get_current_user
 from app.services import review_service
@@ -81,6 +81,9 @@ def update_review(
     review.emotion_tags = payload.emotion
     review.liked_points = payload.liked
     review.disliked_points = payload.disliked
+    # 유사 리뷰 계산의 입력이 바뀌었으므로 캐시된 결과는 더 이상 유효하지 않다 —
+    # 지우면 다음 조회 때 새 내용 기준으로 다시 계산된다.
+    db.query(SimilarBooksCache).filter(SimilarBooksCache.review_id == review.id).delete()
     db.commit()
     db.refresh(review)
     return review_service.to_review_out(review)
@@ -98,8 +101,9 @@ def delete_review(
     if review.user_id != current_user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "본인이 작성한 기록만 삭제할 수 있습니다.")
 
-    # review_reactions가 review_id를 참조하므로(FK), 리뷰 자체를 지우기 전에 먼저 지운다.
+    # review_reactions/similar_books_cache가 review_id를 참조하므로(FK), 리뷰 자체를 지우기 전에 먼저 지운다.
     db.query(ReviewReaction).filter(ReviewReaction.review_id == review.id).delete()
+    db.query(SimilarBooksCache).filter(SimilarBooksCache.review_id == review.id).delete()
     db.delete(review)
     db.commit()
 
