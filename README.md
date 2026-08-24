@@ -169,11 +169,18 @@
 git clone <repo-url>
 cd literec-system
 
+# 0) 백엔드 환경변수 (docker-compose.yml의 backend가 env_file: .env로 읽음)
+cp .env.example .env
+
 # 1) DB + 백엔드(:8000) + ML 서버(:8001)
 docker compose up -d db backend ml
 # 헬스체크: http://localhost:8001/health 가 catalog_loaded=true 될 때까지 대기(모델 로드+임베딩+클러스터링)
 
-# 2) 프론트엔드(:5173)
+# 2) 스키마 적용 + 시드 데이터 적재 (최초 1회)
+docker compose exec backend uv run alembic upgrade head
+docker compose exec backend uv run python scripts/seed.py
+
+# 3) 프론트엔드(:5173)
 cd app
 npm install
 npm run dev
@@ -182,6 +189,21 @@ npm run dev
 - `backend`, `ml`은 각각 `Python >= 3.12` + [uv](https://docs.astral.sh/uv/)로 의존성을 관리하며, 소스가 볼륨 마운트돼 있어 코드 수정이 바로 반영됩니다(백엔드는 `--reload`, ML은 재기동 필요).
 - 백엔드 테스트: `cd backend && uv run pytest`(실제 Postgres에 `{db}_test` DB를 자동 생성해 사용, 외부 ML 호출만 `respx`로 모킹)
 - ML 카탈로그 재학습을 로컬에서 강제로 트리거하려면 `POST /admin/rebuild-catalog`(헤더 `X-Admin-Secret`)를 호출합니다.
+
+### 필요한 외부 API 키
+
+위 기본 실행(`docker compose up` + `npm run dev`)만으로는 **외부 API 키가 전혀 필요 없습니다.** 책 메타데이터·리뷰가 모두 `data/processed/*.jsonl`로 미리 만들어져 있고 `scripts/seed.py`가 그걸 DB에 적재하는 방식이라, 앱 실행 중에는 백엔드도 ML 서버도 네이버·Upstage를 직접 호출하지 않습니다.
+
+외부 API 키는 이 시드 데이터 자체를 새로 만들거나(오프라인 파이프라인), 게시판에 달린 신규 리뷰를 5축으로 구조화하는 스크립트를 돌릴 때만 필요합니다.
+
+| 키 | 어디서 읽나 | 언제 필요한가 |
+|---|---|---|
+| `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | `data/.env` (`data/src/build_naver_book_dataset.py` 등에서 `load_dotenv`로 로드) | 도서 메타데이터를 네이버 도서검색 API로 새로 수집할 때 |
+| `UPSTAGE_API_KEY` | `data/.env` (`data/src/llm_review/structure_reviews.py`가 `load_dotenv`로 로드) | LLM 리뷰 생성/5축 구조화 스크립트를 오프라인으로 다시 돌릴 때 |
+| `UPSTAGE_API_KEY` | 프로세스 환경변수 (`ML/pipeline/cronjobs/structure_new_reviews.py`가 `os.environ`에서 직접 읽음, `.env` 자동 로드 안 됨) | 게시판 신규 리뷰 구조화 CronJob을 로컬에서 실행할 때 — 배포 환경에서는 k8s Secret(`upstage-secret`)으로 주입 |
+
+즉 `data/.env`에 Upstage/네이버 키가 있는 건 의도된 분리입니다 — 앱을 서빙하는 `backend`/`ml` 서비스가 아니라 `data/` 아래 시드 데이터 생성용 오프라인 스크립트 전용 설정 파일입니다. 다만 게시판 신규 리뷰를 구조화하는 `structure_new_reviews.py`는 `data/.env`를 자동으로 읽지 않으므로, 이 스크립트를 로컬에서 실행하려면 `UPSTAGE_API_KEY`를 쉘 환경변수로 직접 export하거나 실행 커맨드 앞에 붙여야 합니다.
+- 프론트엔드는 `http://localhost:5173`, 백엔드 API는 `http://localhost:8000`에서 접근합니다.
 
 ## 배포 환경
 
