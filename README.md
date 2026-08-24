@@ -187,7 +187,7 @@ npm run dev
 
 단일 EC2 인스턴스 위에 경량 Kubernetes(k3s, Traefik 인그레스 내장)로 배포되어 있습니다.
 
-<img src="docs/diagrams/infra-deployment.svg" alt="인프라 배포 구조: GitHub push → GitHub Actions가 변경된 경로만 감지해 Docker 이미지를 빌드/푸시하고 kubectl rollout restart로 배포. 단일 EC2(t3.small) 위 k3s 클러스터 안에서 Traefik Ingress가 backend/frontend로 라우팅하고, backend는 postgres·ml-server를 호출하며, ml 네임스페이스에는 매일 새벽 2시 신규 리뷰를 구조화하는 structure-reviews CronJob과 매주 일요일 새벽 3시 카탈로그를 재계산하는 weekly-rebuild CronJob이 함께 떠 있다" width="100%">
+<img src="docs/diagrams/infra-cloud-style.svg" alt="인프라 배포 구조: GitHub push → GitHub Actions가 변경된 경로만 감지해 Docker 이미지를 빌드/푸시하고 kubectl rollout restart로 배포. 단일 EC2(t3.small) 위 k3s 클러스터 안에서 Traefik Ingress가 backend/frontend로 라우팅하고, backend는 postgres·ml-server를 호출하며, ml 네임스페이스에는 매일 새벽 2시 신규 리뷰를 구조화하는 structure-reviews CronJob과 매주 일요일 새벽 3시 카탈로그를 재계산하는 weekly-rebuild CronJob이 함께 떠 있다" width="100%">
 
 ```
 Ingress (Traefik)
