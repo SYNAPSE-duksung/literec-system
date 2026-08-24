@@ -37,6 +37,28 @@ interface LoginResponse {
   user: AuthUser;
 }
 
+// 새로고침해도 보던 화면으로 돌아오게 하려고 현재 화면만 탭 단위로 기억한다(URL은
+// 건드리지 않음 — CLAUDE.md의 "라우팅 라이브러리 쓰지 않는다" 및 UI_DESIGN_SPEC.md의
+// "URL 라우팅이 없으므로 화면 전환은 App의 screen state로 표현한다" 설계를 그대로 따름).
+const SCREEN_STORAGE_KEY = 'literec:lastScreen';
+
+function loadStoredScreen(): Screen | null {
+  try {
+    const raw = sessionStorage.getItem(SCREEN_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Screen) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredScreen(): void {
+  try {
+    sessionStorage.removeItem(SCREEN_STORAGE_KEY);
+  } catch {
+    // sessionStorage를 쓸 수 없는 환경(프라이빗 모드 등)이면 그냥 무시한다.
+  }
+}
+
 export function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -75,6 +97,7 @@ export function App() {
       // 서버 요청이 실패해도 클라이언트 쪽 세션은 정리한다.
     }
     clearAuth();
+    clearStoredScreen();
     setCurrentUser(null);
     setHistory([]);
     setScreen({ name: 'login' });
@@ -84,6 +107,7 @@ export function App() {
   // 부른다 — 서버 쪽 계정은 이미 없으므로 별도 API 호출 없이 클라이언트 세션만 정리한다.
   const handleAccountDeleted = () => {
     clearAuth();
+    clearStoredScreen();
     setCurrentUser(null);
     setHistory([]);
     setScreen({ name: 'login' });
@@ -111,10 +135,12 @@ export function App() {
         setCurrentUser(me);
         setOnboardingComplete(hasOnboarded);
         // screen은 초기값 'login'에 그대로 머물러 있으므로, 재로그인에 성공하면
-        // 로그인 이후 화면(home/onboarding)으로 직접 옮겨줘야 한다.
+        // 로그인 이후 화면으로 직접 옮겨줘야 한다 — 새로고침 전에 보던 화면이
+        // sessionStorage에 남아있으면 그리로, 없으면 home/onboarding으로 이동.
+        const restored = hasOnboarded ? loadStoredScreen() : null;
         setScreen((prev) =>
           prev.name === 'login' || prev.name === 'signup'
-            ? { name: hasOnboarded ? 'home' : 'onboarding' }
+            ? (restored ?? { name: hasOnboarded ? 'home' : 'onboarding' })
             : prev,
         );
       })
@@ -124,6 +150,17 @@ export function App() {
       })
       .finally(() => setAuthChecked(true));
   }, []);
+
+  // 로그인 + 온보딩 완료 상태에서 화면이 바뀔 때마다 sessionStorage에 기록해,
+  // 새로고침해도 같은 화면으로 돌아올 수 있게 한다.
+  useEffect(() => {
+    if (!currentUser || !onboardingComplete) return;
+    try {
+      sessionStorage.setItem(SCREEN_STORAGE_KEY, JSON.stringify(screen));
+    } catch {
+      // 무시 — 저장은 편의 기능일 뿐, 실패해도 앱 동작에는 영향 없다.
+    }
+  }, [currentUser, onboardingComplete, screen]);
 
   const navigate = (next: Screen) => {
     // 탭 화면은 서로 형제 관계라 뒤로가기 부담이 쌓이면 안 되므로 히스토리를 비운다.
