@@ -20,8 +20,6 @@ import { ReviewDetailPage } from './pages/ReviewDetailPage';
 import { MyPage } from './pages/MyPage';
 import { MyListPage } from './pages/MyListPage';
 
-const ONBOARDING_STORAGE_KEY = 'literec:onboardingComplete';
-
 const MY_LIST_TITLES: Record<MyListType, string> = {
   likedBooks: '좋아한 책',
   dislikedBooks: '싫어요 표시한 책',
@@ -42,16 +40,32 @@ interface LoginResponse {
 export function App() {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(
-    () => localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true',
-  );
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [screen, setScreen] = useState<Screen>({ name: 'login' });
   const [history, setHistory] = useState<Screen[]>([]);
 
-  const applyLogin = (result: LoginResponse) => {
+  // 온보딩 완료 여부는 브라우저가 아니라 계정(서버) 기준으로 판단한다 — preferredEmotions는
+  // 온보딩 1단계에서 최소 1개 이상 골라야만 다음 단계로 넘어갈 수 있어(OnboardingPage 참고),
+  // 실제로 온보딩을 마쳤는지 판별하는 정확한 신호다.
+  const checkOnboardingComplete = async (): Promise<boolean> => {
+    try {
+      const profile = await apiFetch<{ preferredEmotions: string[] }>('/api/users/me/profile');
+      return profile.preferredEmotions.length > 0;
+    } catch {
+      return false;
+    }
+  };
+
+  // 토큰을 먼저 세팅해야 프로필 조회가 인증되므로, currentUser는 온보딩 여부까지 확인한
+  // 뒤 한 번에 반영한다 — currentUser만 먼저 세팅되면 onboardingComplete가 아직 이전
+  // 값(다른 계정 것)인 채로 잠깐 화면이 깜빡일 수 있다.
+  const applyLogin = async (result: LoginResponse): Promise<boolean> => {
     setAccessToken(result.access_token);
     setCurrentUserId(result.user.id);
+    const hasOnboarded = await checkOnboardingComplete();
     setCurrentUser(result.user);
+    setOnboardingComplete(hasOnboarded);
+    return hasOnboarded;
   };
 
   const handleLogout = async () => {
@@ -93,12 +107,14 @@ export function App() {
         setAccessToken(body.access_token);
         const me = await apiFetch<AuthUser>('/api/auth/me');
         setCurrentUserId(me.id);
+        const hasOnboarded = await checkOnboardingComplete();
         setCurrentUser(me);
+        setOnboardingComplete(hasOnboarded);
         // screen은 초기값 'login'에 그대로 머물러 있으므로, 재로그인에 성공하면
         // 로그인 이후 화면(home/onboarding)으로 직접 옮겨줘야 한다.
         setScreen((prev) =>
           prev.name === 'login' || prev.name === 'signup'
-            ? { name: onboardingComplete ? 'home' : 'onboarding' }
+            ? { name: hasOnboarded ? 'home' : 'onboarding' }
             : prev,
         );
       })
@@ -159,7 +175,7 @@ export function App() {
               method: 'POST',
               body: JSON.stringify({ email: input.email, password: input.password }),
             });
-            applyLogin(result);
+            await applyLogin(result);
             setScreen({ name: 'onboarding' });
           }}
           onBack={() => setScreen({ name: 'login' })}
@@ -173,8 +189,8 @@ export function App() {
             method: 'POST',
             body: JSON.stringify({ email, password }),
           });
-          applyLogin(result);
-          setScreen(onboardingComplete ? { name: 'home' } : { name: 'onboarding' });
+          const hasOnboarded = await applyLogin(result);
+          setScreen(hasOnboarded ? { name: 'home' } : { name: 'onboarding' });
         }}
         onGoSignup={() => setScreen({ name: 'signup' })}
       />
@@ -186,7 +202,6 @@ export function App() {
       <UserProfileProvider>
         <OnboardingPage
           onComplete={() => {
-            localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
             setOnboardingComplete(true);
             setScreen({ name: 'home' });
           }}
